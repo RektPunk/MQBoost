@@ -4,6 +4,7 @@ from module.model import MonotonicQuantileRegressor
 
 if __name__ == "__main__":
     sample_size = 500
+    alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
     params = {
         "max_depth": 4,
         "num_leaves": 15,
@@ -12,20 +13,20 @@ if __name__ == "__main__":
         "boosting_type": "gbdt",
     }
     x = np.linspace(-10, 10, sample_size)
-    y = np.sin(x)
-    y_noise = y + np.random.uniform(-0.4, 0.4, sample_size)
-    x_test = np.linspace(-5, 5, sample_size)
+    y = np.sin(x) + np.random.uniform(-0.4, 0.4, sample_size)
+    x_test = np.linspace(-10, 10, sample_size)
+    y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 
     monotonic_quantile_regressor = MonotonicQuantileRegressor(
-        x=x, y=y, alphas=[0.49, 0.5, 0.51]
+        x=x, y=y_test, alphas=alphas
     )
     model = monotonic_quantile_regressor.train(params=params)
-    preds = monotonic_quantile_regressor.predict(x=x_test, alphas=[0.49, 0.5, 0.51])
+    preds = monotonic_quantile_regressor.predict(x=x_test, alphas=alphas)
 
     fig = go.Figure(
         go.Scatter(
             x=x_test,
-            y=np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size),
+            y=y_test,
             mode="markers",
         )
     )
