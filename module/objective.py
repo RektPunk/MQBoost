@@ -49,9 +49,9 @@ def check_loss_eval(
     """
     Return composite quantile loss
     Args:
-        y_pred (np.ndarray) 
-        dtrain (lgb.basic.Dataset) 
-        alphas (List[float]) 
+        y_pred (np.ndarray)
+        dtrain (lgb.basic.Dataset)
+        alphas (List[float])
 
     Returns:
         Tuple[str, np.ndarray, bool]
