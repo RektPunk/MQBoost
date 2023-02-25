@@ -45,6 +45,20 @@ def _prepare_train(
 
 
 class MonotonicQuantileRegressor:
+    """
+    Monotone quantile regressor which preserving monotonicity among quantiles
+    Attributes
+    ----------
+    x: Union[pd.DataFrame, pd.Series, np.ndarray]
+    y: Union[pd.Series, np.ndarray]
+    alphas: Union[List[float], float]
+
+    Methods
+    -------
+    train
+    predict
+    """
+
     def __init__(
         self,
         x: Union[pd.DataFrame, pd.Series, np.ndarray],
@@ -58,6 +72,14 @@ class MonotonicQuantileRegressor:
         self.feval = partial(check_loss_eval, alphas=alphas)
 
     def train(self, params: Dict[str, Any]) -> lgb.basic.Booster:
+        """
+        Train regressor and return model
+        Args:
+            params (Dict[str, Any]): params of lgb
+
+        Returns:
+            lgb.basic.Booster
+        """
         self._params = params.copy()
         if "monotone_constraints" in self._params:
             self._params["monotone_constraints"].append(1)
@@ -83,6 +105,15 @@ class MonotonicQuantileRegressor:
         x: Union[pd.DataFrame, pd.Series, np.ndarray],
         alphas: Union[List[float], float],
     ) -> np.ndarray:
+        """
+        Predict x with alphas
+        Args:
+            x (Union[pd.DataFrame, pd.Series, np.ndarray])
+            alphas (Union[List[float], float])
+
+        Returns:
+            np.ndarray
+        """
         alphas = _alpha_validate(alphas)
         _x = _prepare_x(x, alphas)
         _pred = self.model.predict(_x)
