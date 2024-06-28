@@ -1,4 +1,4 @@
-from typing import Any, List, Union, Dict
+from typing import List, Union, Dict
 from itertools import repeat, chain
 
 import numpy as np
