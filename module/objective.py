@@ -1,6 +1,7 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import numpy as np
 import lightgbm as lgb
+import xgboost as xgb
 
 
 def _rho(u, alpha) -> np.ndarray:
@@ -12,13 +13,15 @@ def _grad_rho(u, alpha) -> np.ndarray:
 
 
 def check_loss_grad_hess(
-    y_pred: np.ndarray, dtrain: lgb.basic.Dataset, alphas: List[float]
+    y_pred: np.ndarray,
+    dtrain: Union[lgb.basic.Dataset, xgb.DMatrix],
+    alphas: List[float],
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Return gradient and hessin of composite quanitle loss
     Args:
         y_pred (np.ndarray)
-        dtrain (lgb.basic.Dataset)
+        dtrain (Union[lgb.basic.Dataset, xgb.DMatrix])
         alphas (List[float])
 
     Returns:
@@ -44,13 +47,15 @@ def check_loss_grad_hess(
 
 
 def check_loss_eval(
-    y_pred: np.ndarray, dtrain: lgb.basic.Dataset, alphas: List[float]
+    y_pred: np.ndarray,
+    dtrain: Union[lgb.basic.Dataset, xgb.DMatrix],
+    alphas: List[float],
 ) -> Tuple[str, np.ndarray, bool]:
     """
     Return composite quantile loss
     Args:
         y_pred (np.ndarray)
-        dtrain (lgb.basic.Dataset)
+        dtrain (Union[lgb.basic.Dataset, xgb.DMatrix])
         alphas (List[float])
 
     Returns:
