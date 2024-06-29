@@ -14,7 +14,6 @@ pyhon run.py
 ```
 4. Results
 ![](img/lightgbm.png)
-
 ![](img/xgboost.png)
 
 5. Structure
