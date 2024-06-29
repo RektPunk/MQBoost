@@ -26,11 +26,16 @@ if __name__ == "__main__":
         go.Scatter(
             x=x_test,
             y=y_test,
+            name="test",
             mode="markers",
         )
     )
-    for _pred in preds_lgb:
-        lgb_fig.add_trace(go.Scatter(x=x_test, y=_pred, mode="lines"))
+    for _pred, alpha in zip(preds_lgb, alphas):
+        lgb_fig.add_trace(
+            go.Scatter(x=x_test, y=_pred, name=f"{alpha}-quantile", mode="lines")
+        )
+
+    lgb_fig.update_layout(title="LightGBM Predictions")
     lgb_fig.show()
 
     monotonic_quantile_xgb = QuantileRegressorXgb(x=x, y=y_test, alphas=alphas)
@@ -39,15 +44,20 @@ if __name__ == "__main__":
         "max_depth": 10,
     }
     monotonic_quantile_xgb.train(params=params)
-    preds = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
+    preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
 
     xgb_fig = go.Figure(
         go.Scatter(
             x=x_test,
             y=y_test,
+            name="test",
             mode="markers",
         )
     )
-    for _pred in preds:
-        xgb_fig.add_trace(go.Scatter(x=x_test, y=_pred, mode="lines"))
+    for _pred, alpha in zip(preds_xgb, alphas):
+        xgb_fig.add_trace(
+            go.Scatter(x=x_test, y=_pred, name=f"{alpha}-quantile", mode="lines")
+        )
+
+    xgb_fig.update_layout(title="XGBoost Predictions")
     xgb_fig.show()
