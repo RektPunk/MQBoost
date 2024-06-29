@@ -17,6 +17,8 @@ def alpha_validate(
 ) -> List[float]:
     if isinstance(alphas, float):
         alphas = [alphas]
+    assert len(alphas) > 0, "alpha is not valid"
+
     return alphas
 
 

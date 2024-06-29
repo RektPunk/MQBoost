@@ -16,7 +16,6 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
     x: Union[pd.DataFrame, pd.Series, np.ndarray]
     y: Union[pd.Series, np.ndarray]
     alphas: Union[List[float], float]
-    _model_name: str = "lightgbm"
 
     Methods
     -------
@@ -29,13 +28,12 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
         x: Union[pd.DataFrame, pd.Series, np.ndarray],
         y: Union[pd.Series, np.ndarray],
         alphas: Union[List[float], float],
-        _model_name: str = "lightgbm",
     ):
         super().__init__(
             x=x,
             y=y,
             alphas=alphas,
-            _model_name=_model_name,
+            _model_name="lightgbm",
         )
 
     def train(self, params: Dict[str, Any]) -> lgb.basic.Booster:
@@ -56,22 +54,6 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
         )
         return self.model
 
-    def predict(
-        self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
-    ) -> np.ndarray:
-        """
-        Predict x with alphas
-        Args:
-            x (Union[pd.DataFrame, pd.Series, np.ndarray])
-            alphas (Union[List[float], float])
-
-        Returns:
-            np.ndarray
-        """
-        return super().predict(x=x, alphas=alphas)
-
 
 class QuantileRegressorXgb(MonotoneQuantileRegressor):
     """
@@ -81,7 +63,6 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
     x: Union[pd.DataFrame, pd.Series, np.ndarray]
     y: Union[pd.Series, np.ndarray]
     alphas: Union[List[float], float]
-    _model_name: str = "xgboost"
 
     Methods
     -------
@@ -94,13 +75,12 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
         x: Union[pd.DataFrame, pd.Series, np.ndarray],
         y: Union[pd.Series, np.ndarray],
         alphas: Union[List[float], float],
-        _model_name: str = "xgboost",
     ):
         super().__init__(
             x=x,
             y=y,
             alphas=alphas,
-            _model_name=_model_name,
+            _model_name="xgboost",
         )
 
     def train(self, params: Dict[str, Any]) -> xgb.Booster:
@@ -120,19 +100,3 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
             obj=self.fobj,
         )
         return self.model
-
-    def predict(
-        self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
-    ) -> np.ndarray:
-        """
-        Predict x with alphas
-        Args:
-            x (Union[pd.DataFrame, pd.Series, np.ndarray])
-            alphas (Union[List[float], float])
-
-        Returns:
-            np.ndarray
-        """
-        return super().predict(x=x, alphas=alphas)
