@@ -8,8 +8,8 @@ import pandas as pd
 import lightgbm as lgb
 import xgboost as xgb
 
-from module.utils import alpha_validate, prepare_train, prepare_x
-from module.objective import check_loss_grad_hess, check_loss_eval
+from .utils import alpha_validate, prepare_train, prepare_x
+from .objective import check_loss_grad_hess, check_loss_eval
 
 
 __all__ = ["MonotoneQuantileRegressor"]

@@ -5,7 +5,12 @@ import pandas as pd
 import lightgbm as lgb
 import xgboost as xgb
 
-from module.abstract import MonotoneQuantileRegressor
+from .abstract import MonotoneQuantileRegressor
+
+__all__ = [
+    "QuantileRegressorLgb",
+    "QuantileRegressorXgb",
+]
 
 
 class QuantileRegressorLgb(MonotoneQuantileRegressor):

@@ -1,6 +1,35 @@
+Metadata-Version: 2.1
+Name: quantile-tree
+Version: 0.0.2
+Summary: Monotone quantile regressor
+Home-page: https://github.com/RektPunk/monotone-quantile-tree
+Author: RektPunk
+Author-email: rektpunk@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=2.0.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: lightgbm>=4.0.0
+Requires-Dist: xgboost>=2.0.0
+
+# About
+
+Multiple quantiles estimation model maintaining non-crossing condition (or monotone quantile condition) using Lightgbm and XGBoost
+
+# Getting Started
+1. Install
+```bash
+pip install quantile-tree
+```
+
+2. Run example code
+```python
 import numpy as np
 import plotly.graph_objects as go
-from module.model import QuantileRegressorLgb, QuantileRegressorXgb
+from quantile_tree import QuantileRegressorLgb, QuantileRegressorXgb
 
 
 if __name__ == "__main__":
@@ -16,7 +45,6 @@ if __name__ == "__main__":
         "max_depth": 4,
         "num_leaves": 15,
         "learning_rate": 0.1,
-        "n_estimators": 100,
         "boosting_type": "gbdt",
     }
     monotonic_quantile_lgb.train(params=lgb_params)
@@ -61,3 +89,4 @@ if __name__ == "__main__":
 
     xgb_fig.update_layout(title="XGBoost Predictions")
     xgb_fig.show()
+```
