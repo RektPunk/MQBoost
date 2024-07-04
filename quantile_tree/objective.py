@@ -4,12 +4,16 @@ import lightgbm as lgb
 import xgboost as xgb
 
 
-def _rho(u, alpha) -> np.ndarray:
-    return u * _grad_rho(u, alpha)
-
+__all__ = [
+    "check_loss_grad_hess",
+    "check_loss_eval",
+]
 
 def _grad_rho(u, alpha) -> np.ndarray:
     return -(alpha - (u < 0).astype(float))
+
+def _rho(u, alpha) -> np.ndarray:
+    return u * _grad_rho(u, alpha)
 
 
 def check_loss_grad_hess(

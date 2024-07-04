@@ -15,6 +15,14 @@ __all__ = [
 def alpha_validate(
     alphas: Union[List[float], float],
 ) -> List[float]:
+    """
+    Validate alphas
+    Args:
+        alphas (Union[List[float], float])
+
+    Returns:
+        List[float]
+    """
     if isinstance(alphas, float):
         alphas = [alphas]
     assert len(alphas) > 0, "alpha is not valid"
@@ -26,13 +34,22 @@ def prepare_x(
     x: Union[pd.DataFrame, pd.Series, np.ndarray],
     alphas: List[float],
 ) -> pd.DataFrame:
+    """
+    Return stacked X
+    Args:
+        x (Union[pd.DataFrame, pd.Series, np.ndarray])
+        alphas (List[float])
+
+    Returns:
+        pd.DataFrame
+    """
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
         x = pd.DataFrame(x)
     assert "_tau" not in x.columns, "Column name '_tau' is not allowed."
     _alpha_repeat_count_list = [list(repeat(alpha, len(x))) for alpha in alphas]
     _alpha_repeat_list = list(chain.from_iterable(_alpha_repeat_count_list))
+    
     _repeated_x = pd.concat([x] * len(alphas), axis=0)
-
     _repeated_x = _repeated_x.assign(
         _tau=_alpha_repeat_list,
     )
@@ -44,6 +61,16 @@ def prepare_train(
     y: Union[pd.Series, np.ndarray],
     alphas: List[float],
 ) -> Dict[str, Union[pd.DataFrame, np.ndarray]]:
+    """
+    Return stacked X, y for training
+    Args:
+        x (Union[pd.DataFrame, pd.Series, np.ndarray])
+        y (Union[pd.Series, np.ndarray])
+        alphas (List[float])
+
+    Returns:
+        Dict[str, Union[pd.DataFrame, np.ndarray]]
+    """
     _train_df = prepare_x(x, alphas)
     _repeated_y = np.concatenate(list(repeat(y, len(alphas))))
     return (_train_df, _repeated_y)

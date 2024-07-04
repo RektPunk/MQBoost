@@ -106,6 +106,15 @@ class MonotoneQuantileRegressor:
         x: Union[pd.DataFrame, pd.Series, np.ndarray],
         alphas: Union[List[float], float],
     ) -> np.ndarray:
+        """
+        Return predicted quantiles
+        Args:
+            x (Union[pd.DataFrame, pd.Series, np.ndarray])
+            alphas (Union[List[float], float])
+
+        Returns:
+            np.ndarray
+        """
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
         _x = PREDICT_DATASET_FUNCS.get(self._model_name)(_x)
