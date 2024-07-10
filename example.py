@@ -1,16 +1,19 @@
 import numpy as np
 from quantile_tree import QuantileRegressorLgb, QuantileRegressorXgb
 
+
 ## Generate sample
 sample_size = 500
-alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 x = np.linspace(-10, 10, sample_size)
 y = np.sin(x) + np.random.uniform(-0.4, 0.4, sample_size)
 x_test = np.linspace(-10, 10, sample_size)
 y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 
+## target quantiles
+alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
+
 ## QuantileRegressorLgb
-monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas, delta=0.05)
+monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas)
 lgb_params = {
     "max_depth": 4,
     "num_leaves": 15,
@@ -20,20 +23,25 @@ lgb_params = {
 monotonic_quantile_lgb.train(params=lgb_params)
 preds_lgb = monotonic_quantile_lgb.predict(x=x_test, alphas=alphas)
 
+## QuantileRegressorLgb + huber loss (default; check loss)
+## delta must be smaller than 0.1
+# monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas, objective = "huber", delta = 0.05)
+# monotonic_quantile_lgb.train(params=lgb_params)
+
 ## QuantileRegressorXgb
-monotonic_quantile_xgb = QuantileRegressorXgb(
-    x=x,
-    y=y_test,
-    alphas=alphas,
-    objective="huber",
-    delta=0.1,
-)
+monotonic_quantile_xgb = QuantileRegressorXgb(x=x, y=y_test, alphas=alphas)
 params = {
     "learning_rate": 0.65,
     "max_depth": 10,
 }
 monotonic_quantile_xgb.train(params=params)
 preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
+
+## QuantileRegressorLgb + huber loss (default; check loss)
+## delta must be smaller than 0.1
+# monotonic_quantile_xgb = QuantileRegressorXgb(x=x, y=y_test, alphas=alphas, objective = "huber", delta = 0.05)
+# monotonic_quantile_xgb.train(params=xgb_params)
+
 
 ### Visualization
 import plotly.graph_objects as go
