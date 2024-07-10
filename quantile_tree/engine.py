@@ -1,39 +1,23 @@
-from typing import List, Union, Any, Dict, Callable
+from typing import Any, Dict
 from functools import partial
-from enum import Enum
 
 import numpy as np
-import pandas as pd
 
-import lightgbm as lgb
-import xgboost as xgb
-
-from .utils import alpha_validate, prepare_train, prepare_x
-from .objective import check_loss_grad_hess, check_loss_eval
+from .base import (
+    ModelName,
+    ObjectiveName,
+    TRAIN_DATASET_FUNC,
+    MONOTONE_CONSTRAINTS_TYPE,
+    PREDICT_DATASET_FUNC,
+    OBJECTIVE_FUNC,
+    XdataLike,
+    YdataLike,
+    AlphaLike,
+)
+from .utils import alpha_validate, prepare_train, prepare_x, delta_validate
 
 
 __all__ = ["MonotoneQuantileRegressor"]
-
-
-class _ModelName(str, Enum):
-    lightgbm: str = "lightgbm"
-    xgboost: str = "xgboost"
-
-
-TRAIN_DATASET_FUNCS: Dict[str, Union[lgb.Dataset, xgb.DMatrix]] = {
-    "lightgbm": lgb.Dataset,
-    "xgboost": xgb.DMatrix,
-}
-
-MONOTONE_CONSTRAINTS_TYPE: Dict[str, Union[list, tuple]] = {
-    "lightgbm": list,
-    "xgboost": tuple,
-}
-
-PREDICT_DATASET_FUNCS: Dict[str, Union[Callable, xgb.DMatrix]] = {
-    "lightgbm": lambda x: x,
-    "xgboost": xgb.DMatrix,
-}
 
 
 class MonotoneQuantileRegressor:
@@ -41,10 +25,11 @@ class MonotoneQuantileRegressor:
     Monotone quantile regressor which preserving monotonicity among quantiles
     Attributes
     ----------
-    x: Union[pd.DataFrame, pd.Series, np.ndarray]
-    y: Union[pd.Series, np.ndarray]
-    alphas: Union[List[float], float]
-    _model_name: _ModelName
+    x: XdataLike
+    y: YdataLike
+    alphas: AlphaLike
+    objective: ObjectiveName
+    _model_name: ModelName
 
     Methods
     -------
@@ -54,30 +39,41 @@ class MonotoneQuantileRegressor:
 
     def __init__(
         self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        y: Union[pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
-        _model_name: _ModelName,
+        x: XdataLike,
+        y: YdataLike,
+        alphas: AlphaLike,
+        objective: ObjectiveName,
+        _model_name: ModelName,
+        **kwargs,
     ):
         """
         Set objevtive, dataset
 
         Args:
-            x (Union[pd.DataFrame, pd.Series, np.ndarray])
-            y (Union[pd.Series, np.ndarray])
-            alphas (Union[List[float], float])
-            _model_name (_ModelName)
+            x (XdataLike)
+            y (YdataLike)
+            alphas (AlphaLike)
+            objective (ObjectiveName)
+            _model_name (ModelName)
         """
         alphas = alpha_validate(alphas)
         self._model_name = _model_name
+        self._objective = objective
         self.x_train, self.y_train = prepare_train(x, y, alphas)
-        self.fobj = partial(check_loss_grad_hess, alphas=alphas)
-        self.feval = partial(check_loss_eval, alphas=alphas)
-        self.dataset = TRAIN_DATASET_FUNCS.get(self._model_name)(
+        if ObjectiveName().get(objective) == ObjectiveName.huber:
+            delta = kwargs.get("delta", 0.05)
+            delta_validate(delta)
+            self.fobj = partial(
+                OBJECTIVE_FUNC.get(objective), alphas=alphas, delta=delta
+            )
+        else:
+            self.fobj = partial(OBJECTIVE_FUNC.get(objective), alphas=alphas)
+        # self.feval = partial(check_loss_eval, alphas=alphas)
+        self.dataset = TRAIN_DATASET_FUNC.get(self._model_name)(
             data=self.x_train, label=self.y_train
         )
 
-    def train(self, params: Dict[str, Any]):
+    def train(self, params: Dict[str, Any]) -> None:
         """
         Set monotone constraints in params
 
@@ -103,21 +99,21 @@ class MonotoneQuantileRegressor:
 
     def predict(
         self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
+        x: XdataLike,
+        alphas: AlphaLike,
     ) -> np.ndarray:
         """
         Return predicted quantiles
         Args:
-            x (Union[pd.DataFrame, pd.Series, np.ndarray])
-            alphas (Union[List[float], float])
+            x (XdataLike)
+            alphas (AlphaLike)
 
         Returns:
             np.ndarray
         """
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
-        _x = PREDICT_DATASET_FUNCS.get(self._model_name)(_x)
+        _x = PREDICT_DATASET_FUNC.get(self._model_name)(_x)
         _pred = self.model.predict(_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred

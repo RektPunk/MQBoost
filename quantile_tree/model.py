@@ -1,11 +1,10 @@
-from typing import List, Union, Dict, Any
+from typing import Dict, Any
 
-import numpy as np
-import pandas as pd
 import lightgbm as lgb
 import xgboost as xgb
 
-from .abstract import MonotoneQuantileRegressor
+from .base import ModelName, ObjectiveName, XdataLike, YdataLike, AlphaLike
+from .engine import MonotoneQuantileRegressor
 
 __all__ = [
     "QuantileRegressorLgb",
@@ -18,9 +17,12 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
     Monotone quantile regressor which preserving monotonicity among quantiles
     Attributes
     ----------
-    x: Union[pd.DataFrame, pd.Series, np.ndarray]
-    y: Union[pd.Series, np.ndarray]
-    alphas: Union[List[float], float]
+    x: XdataLike
+    y: YdataLike
+    alphas: AlphaLike
+    objective: ObjectiveName:
+        Determine objective function. default = "check"
+        If objective is "huber", you can set "delta" (default = 0.05)
 
     Methods
     -------
@@ -30,15 +32,19 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
 
     def __init__(
         self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        y: Union[pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
+        x: XdataLike,
+        y: YdataLike,
+        alphas: AlphaLike,
+        objective: ObjectiveName = ObjectiveName.check,
+        **kwargs,
     ):
         super().__init__(
             x=x,
             y=y,
             alphas=alphas,
-            _model_name="lightgbm",
+            objective=objective,
+            _model_name=ModelName.lightgbm,
+            **kwargs,
         )
 
     def train(self, params: Dict[str, Any]) -> lgb.basic.Booster:
@@ -55,7 +61,7 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
         self.model = lgb.train(
             train_set=self.dataset,
             params=self._params,
-            feval=self.feval,
+            # feval=self.feval,
         )
         return self.model
 
@@ -65,9 +71,10 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
     Monotone quantile regressor which preserving monotonicity among quantiles
     Attributes
     ----------
-    x: Union[pd.DataFrame, pd.Series, np.ndarray]
-    y: Union[pd.Series, np.ndarray]
-    alphas: Union[List[float], float]
+    x: XdataLike
+    y: YdataLike
+    alphas: AlphaLike
+    objective: ObjectiveName: determine objective. default = "check"
 
     Methods
     -------
@@ -77,15 +84,19 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
 
     def __init__(
         self,
-        x: Union[pd.DataFrame, pd.Series, np.ndarray],
-        y: Union[pd.Series, np.ndarray],
-        alphas: Union[List[float], float],
+        x: XdataLike,
+        y: YdataLike,
+        alphas: AlphaLike,
+        objective: ObjectiveName = ObjectiveName.check,
+        **kwargs,
     ):
         super().__init__(
             x=x,
             y=y,
             alphas=alphas,
-            _model_name="xgboost",
+            objective=objective,
+            _model_name=ModelName.xgboost,
+            **kwargs,
         )
 
     def train(self, params: Dict[str, Any]) -> xgb.Booster:

@@ -1,0 +1,80 @@
+import numpy as np
+from quantile_tree import QuantileRegressorLgb, QuantileRegressorXgb
+
+## Generate sample
+sample_size = 500
+alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
+x = np.linspace(-10, 10, sample_size)
+y = np.sin(x) + np.random.uniform(-0.4, 0.4, sample_size)
+x_test = np.linspace(-10, 10, sample_size)
+y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
+
+## QuantileRegressorLgb
+monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas, delta=0.05)
+lgb_params = {
+    "max_depth": 4,
+    "num_leaves": 15,
+    "learning_rate": 0.1,
+    "boosting_type": "gbdt",
+}
+monotonic_quantile_lgb.train(params=lgb_params)
+preds_lgb = monotonic_quantile_lgb.predict(x=x_test, alphas=alphas)
+
+## QuantileRegressorXgb
+monotonic_quantile_xgb = QuantileRegressorXgb(
+    x=x,
+    y=y_test,
+    alphas=alphas,
+    objective="huber",
+    delta=0.1,
+)
+params = {
+    "learning_rate": 0.65,
+    "max_depth": 10,
+}
+monotonic_quantile_xgb.train(params=params)
+preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
+
+### Visualization
+import plotly.graph_objects as go
+
+
+lgb_fig = go.Figure(
+    go.Scatter(
+        x=x_test,
+        y=y_test,
+        name="test",
+        mode="markers",
+    )
+)
+xgb_fig = go.Figure(
+    go.Scatter(
+        x=x_test,
+        y=y_test,
+        name="test",
+        mode="markers",
+    )
+)
+for _pred_lgb, _pred_xgb, alpha in zip(preds_lgb, preds_xgb, alphas):
+    lgb_fig.add_trace(
+        go.Scatter(
+            x=x_test,
+            y=_pred_lgb,
+            name=f"{alpha}-quantile",
+            mode="lines",
+        )
+    )
+    xgb_fig.add_trace(
+        go.Scatter(
+            x=x_test,
+            y=_pred_xgb,
+            name=f"{alpha}-quantile",
+            mode="lines",
+        )
+    )
+
+lgb_fig.update_layout(title="LightGBM Predictions")
+lgb_fig.show()
+
+xgb_fig.update_layout(title="XGBoost Predictions")
+xgb_fig.show()
