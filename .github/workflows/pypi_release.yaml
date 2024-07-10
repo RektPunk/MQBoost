@@ -33,24 +33,3 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         twine upload dist/*
-
-    - name: Create Release Notes
-      id: create_release
-      uses: actions/github-script@v3
-      with:
-        script: |
-          const tag = process.env.GITHUB_REF.replace('refs/tags/', '');
-          const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
-          const { data: release } = await github.repos.createRelease({
-            owner,
-            repo,
-            tag_name: tag,
-            name: tag,
-            body: `Release notes for version ${tag}`,
-            draft: false,
-            prerelease: false
-          });
-          core.setOutput('release_url', release.html_url);
-
-    - name: Output release URL
-      run: echo "Release created at ${{ steps.create_release.outputs.release_url }}"
