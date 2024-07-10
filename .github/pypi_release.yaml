@@ -1,0 +1,56 @@
+name: Publish Python Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+
+    - name: Build package
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        twine upload dist/*
+
+    - name: Create Release Notes
+      id: create_release
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const tag = process.env.GITHUB_REF.replace('refs/tags/', '');
+          const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+          const { data: release } = await github.repos.createRelease({
+            owner,
+            repo,
+            tag_name: tag,
+            name: tag,
+            body: `Release notes for version ${tag}`,
+            draft: false,
+            prerelease: false
+          });
+          core.setOutput('release_url', release.html_url);
+
+    - name: Output release URL
+      run: echo "Release created at ${{ steps.create_release.outputs.release_url }}"
