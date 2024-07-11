@@ -71,10 +71,10 @@ monotonic_quantile_xgb = QuantileRegressorXgb(
     y=y_test,
     alphas=alphas
 )
-params = {
+xgb_params = {
     "learning_rate": 0.65,
     "max_depth": 10,
 }
-monotonic_quantile_xgb.train(params=params)
+monotonic_quantile_xgb.train(params=xgb_params)
 preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
 ```

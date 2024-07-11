@@ -14,15 +14,16 @@ __all__ = [
 
 class QuantileRegressorLgb(MonotoneQuantileRegressor):
     """
-    Monotone quantile regressor which preserving monotonicity among quantiles
+    Monotone quantile regressor which preserving monotonicity among quantiles with LightGBM
     Attributes
     ----------
     x: XdataLike
     y: YdataLike
     alphas: AlphaLike
-    objective: ObjectiveName:
-        Determine objective function. default = "check"
+    objective: ObjectiveName
+        Determine objective function. options: "check" (default), "huber"
         If objective is "huber", you can set "delta" (default = 0.05)
+    **kwargs: Any
 
     Methods
     -------
@@ -36,7 +37,7 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
         y: YdataLike,
         alphas: AlphaLike,
         objective: ObjectiveName = ObjectiveName.check,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             x=x,
@@ -69,13 +70,16 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
 
 class QuantileRegressorXgb(MonotoneQuantileRegressor):
     """
-    Monotone quantile regressor which preserving monotonicity among quantiles
+    Monotone quantile regressor which preserving monotonicity among quantiles with XGBoost
     Attributes
     ----------
     x: XdataLike
     y: YdataLike
     alphas: AlphaLike
-    objective: ObjectiveName: determine objective. default = "check"
+    objective: ObjectiveName
+        Determine objective function. options: "check" (default), "huber"
+        If objective is "huber", you can set "delta" (default = 0.05)
+    **kwargs: Any
 
     Methods
     -------
@@ -89,7 +93,7 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
         y: YdataLike,
         alphas: AlphaLike,
         objective: ObjectiveName = ObjectiveName.check,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             x=x,

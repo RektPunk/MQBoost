@@ -1,6 +1,7 @@
-from typing import List, Tuple, Union
-import numpy as np
+from typing import Any, Callable, List, Tuple, Union
+from functools import partial
 
+import numpy as np
 import lightgbm as lgb
 import xgboost as xgb
 
@@ -37,89 +38,34 @@ def _train_pred_reshape(
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
-def check_loss_grad_hess(
+def _compute_grads_hess(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
     alphas: List[float],
-) -> Tuple[np.ndarray, np.ndarray]:
+    grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
+    **kwargs: Any
+) -> np.ndarray:
     """
-    Return gradient and hessin of composite check quanitle loss
+    Compute gradients for given loss function
     Args:
+        y_train (np.ndarray)
         y_pred (np.ndarray)
-        dtrain (_DtrainLike)
         alphas (List[float])
+        grad_fn (callable)
+        **kwargs (Any): Additional arguments for grad_fn
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]:
-            gradient
-            hessian
+        np.ndarray
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
     grads = []
-    for alpha_inx in range(_len_alpha):
+    for alpha_inx in range(len(alphas)):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-        _grad = _grad_rho(_err_for_alpha, alphas[alpha_inx])
+        _grad = grad_fn(u=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
         grads.append(_grad)
-
-    grad = np.concatenate(grads)
-    hess = np.ones(y_pred.shape)
-
-    return grad, hess
+    return np.concatenate(grads), np.ones_like(y_pred)
 
 
-def huber_loss_grad_hess(
-    y_pred: np.ndarray,
-    dtrain: _DtrainLike,
-    alphas: List[float],
-    delta: float,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Return gradient and hessin of composite huber quanitle loss
-    Args:
-        y_pred (np.ndarray)
-        dtrain (_DtrainLike)
-        alphas (List[float])
-        delta (float)
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]:
-            gradient
-            hessian
-    """
-    _len_alpha = len(alphas)
-    _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
-
-    grads = []
-    for alpha_inx in range(_len_alpha):
-        _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-        _grad = _grad_huber(_err_for_alpha, alphas[alpha_inx], delta)
-        grads.append(_grad)
-
-    grad = np.concatenate(grads)
-    hess = np.ones(y_pred.shape)
-
-    return grad, hess
-
-
-# def check_loss_eval(
-#     y_pred: np.ndarray,dtrain: _DtrainLike,  alphas: List[float],
-# ) -> Tuple[str, np.ndarray, bool]:
-#     """
-#     Return composite quantile loss
-#     Args:
-#         dtrain (_DtrainLike)
-#         y_pred (np.ndarray)
-#         alphas (List[float])
-
-#     Returns:
-#         Tuple[str, np.ndarray, bool]
-#     """
-#     _len_alpha = len(alphas)
-#     _y_train, _y_pred = _train_pred_reshape( y_pred, dtrain,_len_alpha)
-#     loss = []
-#     for alpha_inx in range(_len_alpha):
-#         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-#         loss.append(_rho(_err_for_alpha, alphas[alpha_inx]))
-#     loss = np.concatenate(loss)
-#     return "loss", loss.mean(), False
+check_loss_grad_hess = partial(_compute_grads_hess, grad_fn=_grad_rho)
+huber_loss_grad_hess = partial(_compute_grads_hess, grad_fn=_grad_huber)

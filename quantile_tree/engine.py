@@ -31,6 +31,7 @@ class MonotoneQuantileRegressor:
     alphas: AlphaLike
     objective: ObjectiveName
     _model_name: ModelName
+    **kwargs: Any
 
     Methods
     -------
@@ -45,10 +46,10 @@ class MonotoneQuantileRegressor:
         alphas: AlphaLike,
         objective: ObjectiveName,
         _model_name: ModelName,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
-        Set objevtive, dataset
+        Set objective, dataset
 
         Args:
             x (XdataLike)
@@ -56,6 +57,7 @@ class MonotoneQuantileRegressor:
             alphas (AlphaLike)
             objective (ObjectiveName)
             _model_name (ModelName)
+            **kwargs (Any)
         """
         alphas = alpha_validate(alphas)
         self._model_name = _model_name
@@ -69,7 +71,7 @@ class MonotoneQuantileRegressor:
             )
         else:
             self.fobj = partial(OBJECTIVE_FUNC.get(objective), alphas=alphas)
-        # self.feval = partial(check_loss_eval, alphas=alphas)
+        # self.feval = partial(check_loss_eval, alphas=alphas) #TODO
         self.dataset = TRAIN_DATASET_FUNC.get(self._model_name)(
             data=self.x_train, label=self.y_train
         )
