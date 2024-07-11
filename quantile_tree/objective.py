@@ -45,8 +45,8 @@ def check_loss_grad_hess(
     """
     Return gradient and hessin of composite check quanitle loss
     Args:
-        dtrain (_DtrainLike)
         y_pred (np.ndarray)
+        dtrain (_DtrainLike)
         alphas (List[float])
 
     Returns:

@@ -1,7 +1,7 @@
 # quantile-tree
 
-Non-crossing quantile estimation
-- Lightgbm
+Non-crossing quantile estimation with:
+- LightGBM
 - XGBoost
 
 # Installation
@@ -12,17 +12,24 @@ pip install quantile-tree
 
 # Usage
 ## Features
-- **QuantileRegressorLgb**: quantile regressor preserving monotonicity among quantiles based on LightGBM
-- **QuantileRegressorXgb**: quantile regressor preserving monotonicity among quantiles based on XGBoost
+- **QuantileRegressorLgb**: quantile regressor based on LightGBM
+- **QuantileRegressorXgb**: quantile regressor based on XGBoost
 
 ## Parameters
 ```python
 x         # Explanatory data (e.g. pd.DataFrame)
+          # Column name '_tau' must be not included
 y         # Response data (e.g. np.ndarray)
 alphas    # Target quantiles
 objective # [Optional] objective to minimize, "check"(default) or "huber"
 delta     # [Optional] parameter in "huber" objective, used when objective == "huber"
           # delta must be smaller than 0.1
+```
+## Methods
+```python
+train     # train quantile model
+          # Any params related to model can be used except "objective"
+predict   # predict with input data
 ```
 
 ## Example

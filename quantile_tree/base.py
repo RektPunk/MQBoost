@@ -9,7 +9,7 @@ import xgboost as xgb
 
 from .objective import check_loss_grad_hess, huber_loss_grad_hess
 
-
+# Name
 @dataclass
 class ModelName:
     lightgbm: str = "lightgbm"
@@ -32,6 +32,7 @@ class ObjectiveName:
             )
 
 
+# Functions
 TRAIN_DATASET_FUNC: Dict[str, Union[lgb.Dataset, xgb.DMatrix]] = {
     "lightgbm": lgb.Dataset,
     "xgboost": xgb.DMatrix,
@@ -52,6 +53,15 @@ OBJECTIVE_FUNC: Dict[str, Callable] = {
     "huber": huber_loss_grad_hess,
 }
 
+# Type
 XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
 YdataLike = Union[pd.Series, np.ndarray]
 AlphaLike = Union[List[float], float]
+
+# Exception
+class FittingException(Exception):
+    pass
+
+
+class ValidationException(Exception):
+    pass

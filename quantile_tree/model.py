@@ -56,13 +56,14 @@ class QuantileRegressorLgb(MonotoneQuantileRegressor):
         Returns:
             lgb.basic.Booster
         """
-        super().train(params=params)
+        super().set_params(params=params)
         self._params.update({"objective": self.fobj})
         self.model = lgb.train(
             train_set=self.dataset,
             params=self._params,
-            # feval=self.feval,
+            # feval=self.feval, #TODO
         )
+
         return self.model
 
 
@@ -108,11 +109,12 @@ class QuantileRegressorXgb(MonotoneQuantileRegressor):
         Returns:
             xgb.Booster
         """
-        super().train(params=params)
+        super().set_params(params=params)
         self.model = xgb.train(
             dtrain=self.dataset,
             verbose_eval=False,
             params=self._params,
             obj=self.fobj,
         )
+
         return self.model

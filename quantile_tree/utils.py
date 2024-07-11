@@ -4,7 +4,7 @@ from itertools import repeat, chain
 import numpy as np
 import pandas as pd
 
-from .base import XdataLike, YdataLike, AlphaLike
+from .base import XdataLike, YdataLike, AlphaLike, ValidationException
 
 
 def alpha_validate(
@@ -20,7 +20,9 @@ def alpha_validate(
     """
     if isinstance(alphas, float):
         alphas = [alphas]
-    assert len(alphas) > 0, "alpha is not valid"
+
+    if len(alphas) == 0:
+        raise ValidationException("Input Alpha is not valid")
 
     return alphas
 
@@ -40,7 +42,10 @@ def prepare_x(
     """
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
         x = pd.DataFrame(x)
-    assert "_tau" not in x.columns, "Column name '_tau' is not allowed."
+
+    if "_tau" in x.columns:
+        raise ValidationException("Column name '_tau' is not allowed.")
+
     _alpha_repeat_count_list = [list(repeat(alpha, len(x))) for alpha in alphas]
     _alpha_repeat_list = list(chain.from_iterable(_alpha_repeat_count_list))
 
@@ -72,4 +77,5 @@ def prepare_train(
 
 
 def delta_validate(delta: float) -> None:
-    assert delta <= 0.1, "Delta smaller than 0.1 highly recommended"
+    if delta > 0.1:
+        raise ValidationException("Delta must be smaller than 0.1")

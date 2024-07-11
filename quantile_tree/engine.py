@@ -13,6 +13,7 @@ from .base import (
     XdataLike,
     YdataLike,
     AlphaLike,
+    FittingException,
 )
 from .utils import alpha_validate, prepare_train, prepare_x, delta_validate
 
@@ -73,13 +74,17 @@ class MonotoneQuantileRegressor:
             data=self.x_train, label=self.y_train
         )
 
-    def train(self, params: Dict[str, Any]) -> None:
+    def set_params(self, params: Dict[str, Any]) -> None:
         """
         Set monotone constraints in params
 
         Args:
             params (Dict[str, Any])
         """
+        if isinstance(params, dict) and "objective" in params:
+            raise FittingException(
+                "The parameter named 'objective' must not be included in params"
+            )
         self._params = params.copy()
         monotone_constraints_str: str = "monotone_constraints"
         if monotone_constraints_str in self._params:
@@ -96,6 +101,7 @@ class MonotoneQuantileRegressor:
                     )([1 if "_tau" == col else 0 for col in self.x_train.columns])
                 }
             )
+        self._fitted = True
 
     def predict(
         self,
@@ -111,9 +117,15 @@ class MonotoneQuantileRegressor:
         Returns:
             np.ndarray
         """
+        if not self.__is_fitted:
+            raise FittingException("train must be executed before predict")
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
         _x = PREDICT_DATASET_FUNC.get(self._model_name)(_x)
         _pred = self.model.predict(_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
+
+    @property
+    def __is_fitted(self) -> bool:
+        return getattr(self, "_fitted", False)
