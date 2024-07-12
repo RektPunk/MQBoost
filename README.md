@@ -1,6 +1,6 @@
 # MQBoost
 
-Non-crossing quantile estimation with:
+Multiple quantiles estimation model maintaining non-crossing condition (or monotone quantile condition) using:
 - LightGBM
 - XGBoost
 
