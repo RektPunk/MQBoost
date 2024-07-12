@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
-    name="quantile-tree",
-    version="0.1.2",
+    name="mqboost",
+    version="0.0.0",
     packages=find_packages(),
     install_requires=[
         "numpy>=2.0.0",
@@ -12,14 +12,14 @@ setup(
     ],
     author="RektPunk",
     author_email="rektpunk@gmail.com",
-    description="Monotone quantile regressor",
+    description="Monotonic composite quantile gradient boost regressor",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/RektPunk/quantile-tree",
+    url="https://github.com/RektPunk/mqboost",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.9",
 )

@@ -1,10 +1,9 @@
-from typing import Any, Callable, List, Tuple, Union
 from functools import partial
+from typing import Any, Callable, List, Tuple, Union
 
-import numpy as np
 import lightgbm as lgb
+import numpy as np
 import xgboost as xgb
-
 
 _DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
 
@@ -44,7 +43,7 @@ def _compute_grads_hess(
     alphas: List[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
     **kwargs: Any
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute gradients for given loss function
     Args:
@@ -67,5 +66,5 @@ def _compute_grads_hess(
     return np.concatenate(grads), np.ones_like(y_pred)
 
 
-check_loss_grad_hess = partial(_compute_grads_hess, grad_fn=_grad_rho)
-huber_loss_grad_hess = partial(_compute_grads_hess, grad_fn=_grad_huber)
+check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
+huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)

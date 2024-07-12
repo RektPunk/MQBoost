@@ -6,6 +6,3 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .pytest_cache/
-build/
-dist/
-quantile_tree.egg-info/

@@ -1,6 +1,7 @@
 import numpy as np
-from quantile_tree import QuantileRegressorLgb, QuantileRegressorXgb
+import plotly.graph_objects as go
 
+from mqboost import MQRegressor
 
 ## Generate sample
 sample_size = 500
@@ -12,41 +13,51 @@ y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 ## target quantiles
 alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 
-## QuantileRegressorLgb
-monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas)
+### Ex1: LightGBM + check loss
+mq_lgb = MQRegressor(
+    x=x,
+    y=y_test,
+    alphas=alphas,
+)
 lgb_params = {
     "max_depth": 4,
     "num_leaves": 15,
     "learning_rate": 0.1,
     "boosting_type": "gbdt",
 }
-monotonic_quantile_lgb.train(params=lgb_params)
-preds_lgb = monotonic_quantile_lgb.predict(x=x_test, alphas=alphas)
+mq_lgb.train(params=lgb_params)
+preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 
-## QuantileRegressorLgb + huber loss (default; check loss)
-## delta must be smaller than 0.1
-# monotonic_quantile_lgb = QuantileRegressorLgb(x=x, y=y_test, alphas=alphas, objective = "huber", delta = 0.05)
-# monotonic_quantile_lgb.train(params=lgb_params)
-
-## QuantileRegressorXgb
-monotonic_quantile_xgb = QuantileRegressorXgb(x=x, y=y_test, alphas=alphas)
-params = {
+### EX2: XGBoost + check loss
+mq_xgb = MQRegressor(
+    x=x,
+    y=y_test,
+    alphas=alphas,
+    objective="check",
+    model="xgboost",
+)
+xgb_params = {
     "learning_rate": 0.65,
     "max_depth": 10,
 }
-monotonic_quantile_xgb.train(params=params)
-preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
 
-## QuantileRegressorLgb + huber loss (default; check loss)
-## delta must be smaller than 0.1
-# monotonic_quantile_xgb = QuantileRegressorXgb(x=x, y=y_test, alphas=alphas, objective = "huber", delta = 0.05)
-# monotonic_quantile_xgb.train(params=xgb_params)
+mq_xgb.train(params=xgb_params)
+preds_xgb = mq_xgb.predict(x=x_test, alphas=alphas)
+
+# Ex3: Lightgbm + huber loss
+mq_lgb = MQRegressor(
+    x=x,
+    y=y_test,
+    alphas=alphas,
+    objective="huber",
+    model="lightgbm",
+    delta=0.01,
+)
+mq_lgb.train(params=lgb_params)
+preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 
 
 ### Visualization
-import plotly.graph_objects as go
-
-
 lgb_fig = go.Figure(
     go.Scatter(
         x=x_test,
@@ -80,9 +91,7 @@ for _pred_lgb, _pred_xgb, alpha in zip(preds_lgb, preds_xgb, alphas):
             mode="lines",
         )
     )
-
 lgb_fig.update_layout(title="LightGBM Predictions")
 lgb_fig.show()
-
 xgb_fig.update_layout(title="XGBoost Predictions")
 xgb_fig.show()

@@ -1,4 +1,4 @@
-# quantile-tree
+# MQBoost
 
 Non-crossing quantile estimation with:
 - LightGBM
@@ -7,13 +7,12 @@ Non-crossing quantile estimation with:
 # Installation
 Install using pip:
 ```bash
-pip install quantile-tree
+pip install mqboost
 ```
 
 # Usage
 ## Features
-- **QuantileRegressorLgb**: quantile regressor based on LightGBM
-- **QuantileRegressorXgb**: quantile regressor based on XGBoost
+- **MQRegressor**: quantile regressor
 
 ## Parameters
 ```python
@@ -22,8 +21,9 @@ x         # Explanatory data (e.g. pd.DataFrame)
 y         # Response data (e.g. np.ndarray)
 alphas    # Target quantiles
 objective # [Optional] objective to minimize, "check"(default) or "huber"
+model     # [Optional] boost algorithm to use, "lightgbm"(default) or "xgboost"
 delta     # [Optional] parameter in "huber" objective, used when objective == "huber"
-          # delta must be smaller than 0.1
+          # It must be smaller than 0.1
 ```
 ## Methods
 ```python
@@ -35,7 +35,7 @@ predict   # predict with input data
 ## Example
 ```python
 import numpy as np
-from quantile_tree import QuantileRegressorLgb, QuantileRegressorXgb
+from mqboost import MQRegressor
 
 ## Generate sample
 sample_size = 500
@@ -47,13 +47,11 @@ y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 ## target quantiles
 alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 
-## QuantileRegressorLgb
-monotonic_quantile_lgb = QuantileRegressorLgb(
+## LightGBM based quantile regressor
+mq_lgb = MQRegressor(
     x=x,
     y=y_test,
     alphas=alphas,
-    objective="huber",
-    delta=0.05,
 )
 lgb_params = {
     "max_depth": 4,
@@ -61,20 +59,21 @@ lgb_params = {
     "learning_rate": 0.1,
     "boosting_type": "gbdt",
 }
-monotonic_quantile_lgb.train(params=lgb_params)
-preds_lgb = monotonic_quantile_lgb.predict(x=x_test, alphas=alphas)
+mq_lgb.train(params=lgb_params)
+preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 
-
-## QuantileRegressorXgb
-monotonic_quantile_xgb = QuantileRegressorXgb(
+## XGBoost based quantile regressor
+mq_xgb = MQRegressor(
     x=x,
     y=y_test,
-    alphas=alphas
+    alphas=alphas,
+    objective="check",
+    model="xgboost",
 )
 xgb_params = {
     "learning_rate": 0.65,
     "max_depth": 10,
 }
-monotonic_quantile_xgb.train(params=xgb_params)
-preds_xgb = monotonic_quantile_xgb.predict(x=x_test, alphas=alphas)
+mq_xgb.train(params=xgb_params)
+preds_xgb = mq_xgb.predict(x=x_test, alphas=alphas)
 ```

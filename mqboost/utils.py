@@ -1,10 +1,10 @@
-from typing import List, Union, Tuple
-from itertools import repeat, chain
+from itertools import chain, repeat
+from typing import List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-from .base import XdataLike, YdataLike, AlphaLike, ValidationException
+from mqboost.base import AlphaLike, ValidationException, XdataLike, YdataLike
 
 
 def alpha_validate(
@@ -60,7 +60,7 @@ def prepare_train(
     x: XdataLike,
     y: YdataLike,
     alphas: List[float],
-) -> Tuple[str, Union[pd.DataFrame, np.ndarray]]:
+) -> Tuple[Union[pd.DataFrame, np.ndarray]]:
     """
     Return stacked X, y for training
     Args:
@@ -69,7 +69,7 @@ def prepare_train(
         alphas (List[float])
 
     Returns:
-        Dict[str, Union[pd.DataFrame, np.ndarray]]
+        Tuple[Union[pd.DataFrame, np.ndarray]]
     """
     _train_df = prepare_x(x, alphas)
     _repeated_y = np.concatenate(list(repeat(y, len(alphas))))

@@ -1,42 +1,43 @@
-from typing import Any, Dict
 from functools import partial
+from typing import Any, Dict
 
+import lightgbm as lgb
 import numpy as np
+import xgboost as xgb
 
-from .base import (
-    ModelName,
-    ObjectiveName,
-    TRAIN_DATASET_FUNC,
+from mqboost.base import (
     MONOTONE_CONSTRAINTS_TYPE,
-    PREDICT_DATASET_FUNC,
     OBJECTIVE_FUNC,
-    XdataLike,
-    YdataLike,
+    PREDICT_DATASET_FUNC,
+    TRAIN_DATASET_FUNC,
     AlphaLike,
     FittingException,
+    ModelLike,
+    ModelName,
+    ObjectiveName,
+    XdataLike,
+    YdataLike,
 )
-from .utils import alpha_validate, prepare_train, prepare_x, delta_validate
+from mqboost.utils import alpha_validate, delta_validate, prepare_train, prepare_x
 
 
-__all__ = ["MonotoneQuantileRegressor"]
+__all__ = ["MQRegressor"]
 
 
-class MonotoneQuantileRegressor:
+class MQRegressor:
     """
-    Monotone quantile regressor which preserving monotonicity among quantiles
+    Monotone quantile regressor which preserving monotonicity among quantiles with LightGBM
     Attributes
     ----------
     x: XdataLike
     y: YdataLike
     alphas: AlphaLike
-    objective: ObjectiveName
-    _model_name: ModelName
+    objective: str
+        Determine objective function. options: "check" (default), "huber"
+        If objective is "huber", you can set "delta" (default = 0.05)
+    model: str
+        Determine base model. options: "lightgbm" (default), "xgboost"
     **kwargs: Any
-
-    Methods
-    -------
-    train
-    predict
     """
 
     def __init__(
@@ -44,26 +45,25 @@ class MonotoneQuantileRegressor:
         x: XdataLike,
         y: YdataLike,
         alphas: AlphaLike,
-        objective: ObjectiveName,
-        _model_name: ModelName,
+        objective: str = ObjectiveName.check,
+        model: str = ModelName.lightgbm,
         **kwargs: Any,
     ):
         """
         Set objective, dataset
-
         Args:
             x (XdataLike)
             y (YdataLike)
             alphas (AlphaLike)
             objective (ObjectiveName)
-            _model_name (ModelName)
+            model (ModelName)
             **kwargs (Any)
         """
         alphas = alpha_validate(alphas)
-        self._model_name = _model_name
-        self._objective = objective
+        self._model = ModelName().get(model)
+        self._objective = ObjectiveName().get(objective)
         self.x_train, self.y_train = prepare_train(x, y, alphas)
-        if ObjectiveName().get(objective) == ObjectiveName.huber:
+        if self._objective == ObjectiveName.huber:
             delta = kwargs.get("delta", 0.05)
             delta_validate(delta)
             self.fobj = partial(
@@ -72,14 +72,13 @@ class MonotoneQuantileRegressor:
         else:
             self.fobj = partial(OBJECTIVE_FUNC.get(objective), alphas=alphas)
         # self.feval = partial(check_loss_eval, alphas=alphas) #TODO
-        self.dataset = TRAIN_DATASET_FUNC.get(self._model_name)(
+        self.dataset = TRAIN_DATASET_FUNC.get(self._model)(
             data=self.x_train, label=self.y_train
         )
 
-    def set_params(self, params: Dict[str, Any]) -> None:
+    def __set_params(self, params: Dict[str, Any]) -> None:
         """
         Set monotone constraints in params
-
         Args:
             params (Dict[str, Any])
         """
@@ -93,17 +92,43 @@ class MonotoneQuantileRegressor:
             _monotone_constraints = list(self._params[monotone_constraints_str])
             _monotone_constraints.append(1)
             self._params[monotone_constraints_str] = MONOTONE_CONSTRAINTS_TYPE.get(
-                self._model_name
+                self._model
             )(_monotone_constraints)
         else:
             self._params.update(
                 {
                     monotone_constraints_str: MONOTONE_CONSTRAINTS_TYPE.get(
-                        self._model_name
+                        self._model
                     )([1 if "_tau" == col else 0 for col in self.x_train.columns])
                 }
             )
         self._fitted = True
+
+    def train(self, params: Dict[str, Any]) -> ModelLike:
+        """
+        Train regressor and return model
+        Args:
+            params (Dict[str, Any])
+
+        Returns:
+            ModelLike
+        """
+        self.__set_params(params=params)
+        if self._model == ModelName.lightgbm:
+            self._params.update({"objective": self.fobj})
+            self.model = lgb.train(
+                train_set=self.dataset,
+                params=self._params,
+                # feval=self.feval, #TODO
+            )
+        else:
+            self.model = xgb.train(
+                dtrain=self.dataset,
+                verbose_eval=False,
+                params=self._params,
+                obj=self.fobj,
+            )
+        return self.model
 
     def predict(
         self,
@@ -123,7 +148,7 @@ class MonotoneQuantileRegressor:
             raise FittingException("train must be executed before predict")
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
-        _x = PREDICT_DATASET_FUNC.get(self._model_name)(_x)
+        _x = PREDICT_DATASET_FUNC.get(self._model)(_x)
         _pred = self.model.predict(_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
