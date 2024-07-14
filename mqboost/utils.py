@@ -21,8 +21,17 @@ def alpha_validate(
     if isinstance(alphas, float):
         alphas = [alphas]
 
-    if len(alphas) == 0:
-        raise ValidationException("Input Alpha is not valid")
+    _len_alphas = len(alphas)
+    if _len_alphas == 0:
+        raise ValidationException("Input alpha is not valid")
+
+    if _len_alphas >= 2 and any(
+        alphas[i] > alphas[i + 1] for i in range(_len_alphas - 1)
+    ):
+        raise ValidationException("Alpha is not ascending order")
+
+    if _len_alphas != len(set(alphas)):
+        raise ValidationException("Duplicated alpha exists")
 
     return alphas
 
@@ -77,5 +86,8 @@ def prepare_train(
 
 
 def delta_validate(delta: float) -> None:
+    if isinstance(delta, float):
+        raise ValidationException("delta is not float type")
+
     if delta > 0.1:
         raise ValidationException("Delta must be smaller than 0.1")
