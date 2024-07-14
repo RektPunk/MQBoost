@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "mqboost"
+version = "0.0.0"
+description = "Monotonic composite quantile gradient boost regressor"
+authors = ["RektPunk <rektpunk@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^2.0.0"
+pandas = "^2.2.2"
+lightgbm = "^4.3.0"
+xgboost = "^2.1.0"
+
+
+[tool.poetry.group.dev.dependencies]
+plotly = "^5.22.0"
+pre-commit = "^3.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
