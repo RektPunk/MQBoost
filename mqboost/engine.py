@@ -20,7 +20,6 @@ from mqboost.base import (
 )
 from mqboost.utils import alpha_validate, delta_validate, prepare_train, prepare_x
 
-
 __all__ = ["MQRegressor"]
 
 
@@ -32,9 +31,11 @@ class MQRegressor:
     x: XdataLike
     y: YdataLike
     alphas: AlphaLike
+        It must be in ascending order and not contain duplicates
     objective: str
         Determine objective function. options: "check" (default), "huber"
         If objective is "huber", you can set "delta" (default = 0.05)
+        "delta" must be smaller than 0.1
     model: str
         Determine base model. options: "lightgbm" (default), "xgboost"
     **kwargs: Any
@@ -48,7 +49,7 @@ class MQRegressor:
         objective: str = ObjectiveName.check,
         model: str = ModelName.lightgbm,
         **kwargs: Any,
-    ):
+    ) -> None:
         """
         Set objective, dataset
         Args:
@@ -102,7 +103,6 @@ class MQRegressor:
                     )([1 if "_tau" == col else 0 for col in self.x_train.columns])
                 }
             )
-        self._fitted = True
 
     def train(self, params: Dict[str, Any]) -> ModelLike:
         """
@@ -128,6 +128,7 @@ class MQRegressor:
                 params=self._params,
                 obj=self.fobj,
             )
+        self._fitted = True
         return self.model
 
     def predict(

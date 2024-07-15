@@ -20,6 +20,7 @@ x         # Explanatory data (e.g. pd.DataFrame)
           # Column name '_tau' must be not included
 y         # Response data (e.g. np.ndarray)
 alphas    # Target quantiles
+          # It must be in ascending order and not contain duplicates
 objective # [Optional] objective to minimize, "check"(default) or "huber"
 model     # [Optional] boost algorithm to use, "lightgbm"(default) or "xgboost"
 delta     # [Optional] parameter in "huber" objective, used when objective == "huber"

@@ -86,7 +86,7 @@ def prepare_train(
 
 
 def delta_validate(delta: float) -> None:
-    if isinstance(delta, float):
+    if not isinstance(delta, float):
         raise ValidationException("delta is not float type")
 
     if delta > 0.1:
