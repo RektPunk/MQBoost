@@ -1,11 +1,13 @@
+from __future__ import annotations
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any
 
 import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
 
-_DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
+_DtrainLike = lgb.basic.Dataset | xgb.DMatrix
 
 
 def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
@@ -32,7 +34,7 @@ def _train_pred_reshape(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
     len_alpha: int,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     _y_train = dtrain.get_label()
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
@@ -40,17 +42,17 @@ def _train_pred_reshape(
 def _compute_grads_hess(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
-    alphas: List[float],
+    alphas: list[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
-    **kwargs: Any
-) -> Tuple[np.ndarray, np.ndarray]:
+    **kwargs: Any,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute gradients for given loss function
     Args:
         y_train (np.ndarray)
         y_pred (np.ndarray)
-        alphas (List[float])
-        grad_fn (callable)
+        alphas (list[float])
+        grad_fn (Callable)
         **kwargs (Any): Additional arguments for grad_fn
 
     Returns:

@@ -1,5 +1,6 @@
+from __future__ import annotations
+from typing import Any
 from functools import partial
-from typing import Any, Dict
 
 import lightgbm as lgb
 import numpy as np
@@ -11,12 +12,12 @@ from mqboost.base import (
     PREDICT_DATASET_FUNC,
     TRAIN_DATASET_FUNC,
     AlphaLike,
-    FittingException,
     ModelLike,
-    ModelName,
-    ObjectiveName,
     XdataLike,
     YdataLike,
+    FittingException,
+    ModelName,
+    ObjectiveName,
 )
 from mqboost.utils import alpha_validate, delta_validate, prepare_train, prepare_x
 
@@ -46,8 +47,8 @@ class MQRegressor:
         x: XdataLike,
         y: YdataLike,
         alphas: AlphaLike,
-        objective: str = ObjectiveName.check,
         model: str = ModelName.lightgbm,
+        objective: str = ObjectiveName.check,
         **kwargs: Any,
     ) -> None:
         """
@@ -56,8 +57,8 @@ class MQRegressor:
             x (XdataLike)
             y (YdataLike)
             alphas (AlphaLike)
-            objective (ObjectiveName)
             model (ModelName)
+            objective (ObjectiveName)
             **kwargs (Any)
         """
         alphas = alpha_validate(alphas)
@@ -77,11 +78,11 @@ class MQRegressor:
             data=self.x_train, label=self.y_train
         )
 
-    def __set_params(self, params: Dict[str, Any]) -> None:
+    def __set_params(self, params: dict[str, Any]) -> None:
         """
         Set monotone constraints in params
         Args:
-            params (Dict[str, Any])
+            params (dict[str, Any])
         """
         if isinstance(params, dict) and "objective" in params:
             raise FittingException(
@@ -104,11 +105,11 @@ class MQRegressor:
                 }
             )
 
-    def train(self, params: Dict[str, Any]) -> ModelLike:
+    def train(self, params: dict[str, Any]) -> ModelLike:
         """
         Train regressor and return model
         Args:
-            params (Dict[str, Any])
+            params (dict[str, Any])
 
         Returns:
             ModelLike

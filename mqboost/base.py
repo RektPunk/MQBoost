@@ -1,5 +1,6 @@
+from __future__ import annotations
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -35,31 +36,31 @@ class ObjectiveName(BaseName):
 
 
 # Functions
-TRAIN_DATASET_FUNC: Dict[str, Callable] = {
+TRAIN_DATASET_FUNC: dict[str, Callable] = {
     "lightgbm": lgb.Dataset,
     "xgboost": xgb.DMatrix,
 }
 
-MONOTONE_CONSTRAINTS_TYPE: Dict[str, Callable] = {
+MONOTONE_CONSTRAINTS_TYPE: dict[str, Callable] = {
     "lightgbm": list,
     "xgboost": tuple,
 }
 
-PREDICT_DATASET_FUNC: Dict[str, Callable] = {
+PREDICT_DATASET_FUNC: dict[str, Callable] = {
     "lightgbm": lambda x: x,
     "xgboost": xgb.DMatrix,
 }
 
-OBJECTIVE_FUNC: Dict[str, Callable] = {
+OBJECTIVE_FUNC: dict[str, Callable] = {
     "check": check_loss_grad_hess,
     "huber": huber_loss_grad_hess,
 }
 
 # Type
-XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
-YdataLike = Union[pd.Series, np.ndarray]
-AlphaLike = Union[List[float], float]
-ModelLike = Union[lgb.basic.Booster, xgb.Booster]
+XdataLike = pd.DataFrame | pd.Series | np.ndarray
+YdataLike = pd.Series | np.ndarray
+AlphaLike = list[float] | float
+ModelLike = lgb.basic.Booster | xgb.Booster
 
 # Exception
 class FittingException(Exception):

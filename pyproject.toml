@@ -1,9 +1,11 @@
 [tool.poetry]
 name = "mqboost"
-version = "0.0.1"
+version = "0.0.2"
 description = "Monotonic composite quantile gradient boost regressor"
 authors = ["RektPunk <rektpunk@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/RektPunk/MQBoost"
+
 
 [tool.poetry.dependencies]
 python = "^3.9"

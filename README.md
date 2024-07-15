@@ -48,12 +48,24 @@ y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 ## target quantiles
 alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 
+## model name
+model = "lightgbm" # "xgboost"
+
+## objective funtion
+objective = "huber" # "check"
+delta = 0.01 # set when objective is huber default 0.05
+
 ## LightGBM based quantile regressor
 mq_lgb = MQRegressor(
     x=x,
     y=y_test,
     alphas=alphas,
+    objective=objective,
+    model=model,
+    delta=delta,
 )
+
+## train
 lgb_params = {
     "max_depth": 4,
     "num_leaves": 15,
@@ -61,20 +73,7 @@ lgb_params = {
     "boosting_type": "gbdt",
 }
 mq_lgb.train(params=lgb_params)
-preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 
-## XGBoost based quantile regressor
-mq_xgb = MQRegressor(
-    x=x,
-    y=y_test,
-    alphas=alphas,
-    objective="check",
-    model="xgboost",
-)
-xgb_params = {
-    "learning_rate": 0.65,
-    "max_depth": 10,
-}
-mq_xgb.train(params=xgb_params)
-preds_xgb = mq_xgb.predict(x=x_test, alphas=alphas)
+## predict
+preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 ```
