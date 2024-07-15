@@ -7,7 +7,12 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 
-from mqboost.objective import check_loss_grad_hess, huber_loss_grad_hess
+from mqboost.objective import (
+    check_loss_grad_hess,
+    huber_loss_grad_hess,
+    lgb_eval,
+    xgb_eval,
+)
 
 
 # Name
@@ -54,6 +59,11 @@ PREDICT_DATASET_FUNC: dict[str, Callable] = {
 OBJECTIVE_FUNC: dict[str, Callable] = {
     "check": check_loss_grad_hess,
     "huber": huber_loss_grad_hess,
+}
+
+EVAL_FUNC: dict[str, Callable] = {
+    "lightgbm": lgb_eval,
+    "xgboost": xgb_eval,
 }
 
 # Type

@@ -7,6 +7,7 @@ import numpy as np
 import xgboost as xgb
 
 from mqboost.base import (
+    EVAL_FUNC,
     MONOTONE_CONSTRAINTS_TYPE,
     OBJECTIVE_FUNC,
     PREDICT_DATASET_FUNC,
@@ -19,6 +20,7 @@ from mqboost.base import (
     ModelName,
     ObjectiveName,
 )
+from mqboost.objective import CHECK_LOSS
 from mqboost.utils import alpha_validate, delta_validate, prepare_train, prepare_x
 
 __all__ = ["MQRegressor"]
@@ -40,6 +42,15 @@ class MQRegressor:
     model: str
         Determine base model. options: "lightgbm" (default), "xgboost"
     **kwargs: Any
+
+    Methods
+    ----------
+    train
+    predict
+
+    Property
+    ----------
+    train_score
     """
 
     def __init__(
@@ -73,7 +84,7 @@ class MQRegressor:
             )
         else:
             self.fobj = partial(OBJECTIVE_FUNC.get(objective), alphas=alphas)
-        # self.feval = partial(check_loss_eval, alphas=alphas) #TODO
+        self.feval = partial(EVAL_FUNC.get(model), alphas=alphas)
         self.dataset = TRAIN_DATASET_FUNC.get(self._model)(
             data=self.x_train, label=self.y_train
         )
@@ -115,20 +126,30 @@ class MQRegressor:
             ModelLike
         """
         self.__set_params(params=params)
+
         if self._model == ModelName.lightgbm:
             self._params.update({"objective": self.fobj})
             self.model = lgb.train(
                 train_set=self.dataset,
                 params=self._params,
-                # feval=self.feval, #TODO
+                feval=self.feval,
+                valid_sets=[self.dataset],
             )
+            self._train_score = self.model.best_score["training"][CHECK_LOSS]
         else:
+            _evals_result = {}
             self.model = xgb.train(
                 dtrain=self.dataset,
                 verbose_eval=False,
                 params=self._params,
                 obj=self.fobj,
+                custom_metric=self.feval,
+                evals=[
+                    (self.dataset, "train"),
+                ],
+                evals_result=_evals_result,
             )
+            self._train_score = min(_evals_result["train"][CHECK_LOSS])
         self._fitted = True
         return self.model
 
@@ -158,3 +179,9 @@ class MQRegressor:
     @property
     def __is_fitted(self) -> bool:
         return getattr(self, "_fitted", False)
+
+    @property
+    def train_score(self) -> float:
+        if not self.__is_fitted:
+            raise FittingException("train must be executed before predict")
+        return float(self._train_score)
