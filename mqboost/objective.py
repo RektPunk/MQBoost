@@ -1,7 +1,6 @@
-from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
-from typing import Any
+from typing import Any, List, Tuple
 
 import lightgbm as lgb
 import numpy as np
@@ -35,8 +34,8 @@ def _train_pred_reshape(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
     len_alpha: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    _y_train = dtrain.get_label()
+) -> Tuple[np.ndarray, np.ndarray]:
+    _y_train: np.ndarray = dtrain.get_label()
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
@@ -46,14 +45,14 @@ def _compute_grads_hess(
     alphas: list[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
     **kwargs: Any,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute gradients for given loss function
     Args:
         y_train (np.ndarray)
         y_pred (np.ndarray)
         alphas (list[float])
-        grad_fn (Callable)
+        grad_fn (Callable[[np.ndarray, float, Any], np.ndarray])
         **kwargs (Any): Additional arguments for grad_fn
 
     Returns:
@@ -76,14 +75,14 @@ huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_hube
 def xgb_eval(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
-    alphas: list[float],
+    alphas: List[float],
 ) -> float:
     """
     Compute gradients for given loss function
     Args:
         y_train (np.ndarray)
         y_pred (np.ndarray)
-        alphas (list[float])
+        alphas (List[float])
         grad_fn (Callable)
         **kwargs (Any): Additional arguments for grad_fn
 
@@ -103,7 +102,7 @@ def xgb_eval(
 def lgb_eval(
     y_pred: np.ndarray,
     dtrain: _DtrainLike,
-    alphas: list[float],
-) -> tuple[np.ndarray, np.ndarray]:
+    alphas: List[float],
+) -> Tuple[np.ndarray, np.ndarray]:
     loss_str, loss = xgb_eval(y_pred, dtrain, alphas)
     return loss_str, loss, False

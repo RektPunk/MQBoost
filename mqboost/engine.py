@@ -1,24 +1,21 @@
-from __future__ import annotations
-from typing import Any
 from functools import partial
+from typing import Any, Dict
 
 import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
 
 from mqboost.base import (
-    EVAL_FUNC,
-    MONOTONE_CONSTRAINTS_TYPE,
+    FUNC_TYPE,
     OBJECTIVE_FUNC,
-    PREDICT_DATASET_FUNC,
-    TRAIN_DATASET_FUNC,
     AlphaLike,
-    ModelLike,
-    XdataLike,
-    YdataLike,
     FittingException,
+    ModelLike,
     ModelName,
     ObjectiveName,
+    ValidationException,
+    XdataLike,
+    YdataLike,
 )
 from mqboost.objective import CHECK_LOSS
 from mqboost.utils import alpha_validate, delta_validate, prepare_train, prepare_x
@@ -73,8 +70,9 @@ class MQRegressor:
             **kwargs (Any)
         """
         alphas = alpha_validate(alphas)
-        self._model = ModelName().get(model)
-        self._objective = ObjectiveName().get(objective)
+        self._model = ModelName().get(model)  # TODO
+        self._objective = ObjectiveName().get(objective)  # TODO
+        self._funcs = FUNC_TYPE.get(model)
         self.x_train, self.y_train = prepare_train(x, y, alphas)
         if self._objective == ObjectiveName.huber:
             delta = kwargs.get("delta", 0.05)
@@ -84,19 +82,19 @@ class MQRegressor:
             )
         else:
             self.fobj = partial(OBJECTIVE_FUNC.get(objective), alphas=alphas)
-        self.feval = partial(EVAL_FUNC.get(model), alphas=alphas)
-        self.dataset = TRAIN_DATASET_FUNC.get(self._model)(
+        self.feval = partial(self._funcs.get("eval"), alphas=alphas)
+        self.dataset = self._funcs.get("train_dtype")(
             data=self.x_train, label=self.y_train
         )
 
-    def __set_params(self, params: dict[str, Any]) -> None:
+    def __set_params(self, params: Dict[str, Any]) -> None:
         """
         Set monotone constraints in params
         Args:
-            params (dict[str, Any])
+            params (Dict[str, Any])
         """
         if isinstance(params, dict) and "objective" in params:
-            raise FittingException(
+            raise ValidationException(
                 "The parameter named 'objective' must not be included in params"
             )
         self._params = params.copy()
@@ -104,23 +102,23 @@ class MQRegressor:
         if monotone_constraints_str in self._params:
             _monotone_constraints = list(self._params[monotone_constraints_str])
             _monotone_constraints.append(1)
-            self._params[monotone_constraints_str] = MONOTONE_CONSTRAINTS_TYPE.get(
-                self._model
+            self._params[monotone_constraints_str] = self._funcs.get(
+                "constraints_type"
             )(_monotone_constraints)
         else:
             self._params.update(
                 {
-                    monotone_constraints_str: MONOTONE_CONSTRAINTS_TYPE.get(
-                        self._model
-                    )([1 if "_tau" == col else 0 for col in self.x_train.columns])
+                    monotone_constraints_str: self._funcs.get("constraints_type")(
+                        [1 if "_tau" == col else 0 for col in self.x_train.columns]
+                    )
                 }
             )
 
-    def train(self, params: dict[str, Any]) -> ModelLike:
+    def train(self, params: Dict[str, Any]) -> ModelLike:
         """
         Train regressor and return model
         Args:
-            params (dict[str, Any])
+            params (Dict[str, Any])
 
         Returns:
             ModelLike
@@ -171,7 +169,7 @@ class MQRegressor:
             raise FittingException("train must be executed before predict")
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
-        _x = PREDICT_DATASET_FUNC.get(self._model)(_x)
+        _x = self._funcs.get("predict_dtype")(_x)
         _pred = self.model.predict(_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
