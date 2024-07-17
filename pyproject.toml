@@ -13,6 +13,7 @@ numpy = "^2.0.0"
 pandas = "^2.2.2"
 lightgbm = "^4.3.0"
 xgboost = "^2.1.0"
+optuna = "^3.6.1"
 
 
 [tool.poetry.group.dev.dependencies]
