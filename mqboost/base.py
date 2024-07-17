@@ -40,19 +40,27 @@ class ObjectiveName(BaseName):
     huber: str = "huber"
 
 
+@dataclass
+class TypeName(BaseName):
+    train_dtype: str = "train_dtype"
+    predict_dtype: str = "predict_dtype"
+    constraints_type: str = "constraints_type"
+    eval: str = "eval"
+
+
 # Functions
 FUNC_TYPE: Dict[str, Dict[str, Callable]] = {
-    "lightgbm": {
-        "train_dtype": lgb.Dataset,
-        "predict_dtype": lambda x: x,
-        "constraints_type": list,
-        "eval": lgb_eval,
+    ModelName.lightgbm: {
+        TypeName.train_dtype: lgb.Dataset,
+        TypeName.predict_dtype: lambda x: x,
+        TypeName.constraints_type: list,
+        TypeName.eval: lgb_eval,
     },
-    "xgboost": {
-        "train_dtype": xgb.DMatrix,
-        "predict_dtype": xgb.DMatrix,
-        "constraints_type": tuple,
-        "eval": xgb_eval,
+    ModelName.xgboost: {
+        TypeName.train_dtype: xgb.DMatrix,
+        TypeName.predict_dtype: xgb.DMatrix,
+        TypeName.constraints_type: tuple,
+        TypeName.eval: xgb_eval,
     },
 }
 
