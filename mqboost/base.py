@@ -67,7 +67,7 @@ XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
 YdataLike = Union[pd.Series, np.ndarray]
 AlphaLike = Union[List[float], float]
 ModelLike = Union[lgb.basic.Booster, xgb.Booster]
-DtrainLike = lgb.basic.Dataset | xgb.DMatrix
+DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
 
 
 # Exception
