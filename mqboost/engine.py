@@ -1,7 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import lightgbm as lgb
 import numpy as np
+import optuna
 import xgboost as xgb
 
 from mqboost.base import (
@@ -13,11 +14,12 @@ from mqboost.base import (
     MQStr,
     ObjectiveName,
     TypeName,
-    ValidationException,
     XdataLike,
     YdataLike,
 )
-from mqboost.objective import MQObjective
+from mqboost.constraints import set_monotone_constraints
+from mqboost.hpo import get_params, train_valid_split
+from mqboost.objective import MQObjective, eval_loss
 from mqboost.utils import alpha_validate, prepare_train, prepare_x
 
 __all__ = ["MQRegressor"]
@@ -38,7 +40,7 @@ class MQRegressor:
         "delta" must be smaller than 0.1
     model: str
         Determine base model. options: "lightgbm" (default), "xgboost"
-    **kwargs: Any
+    delta: float
 
     Methods
     ----------
@@ -67,30 +69,47 @@ class MQRegressor:
             alphas (AlphaLike)
             model (ModelName)
             objective (ObjectiveName)
-            **kwargs (Any)
+            delta (float)
         """
-        alphas = alpha_validate(alphas)
+        self._alphas = alpha_validate(alphas)
         self._model = ModelName().get(model)
         self._objective = ObjectiveName().get(objective)
-        self._funcs = FUNC_TYPE.get(model)
-        self._MQObjective = MQObjective(alphas, self._objective, self._model, delta)
-        self.x_train, self.y_train = prepare_train(x, y, alphas)
-        self.dataset = self._funcs.get(TypeName.train_dtype)(
-            data=self.x_train, label=self.y_train
+        _funcs = FUNC_TYPE.get(model)
+        self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
+        self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
+        self._constraints_type: Callable = _funcs.get(TypeName.constraints_type)
+        self._MQObjective = MQObjective(
+            self._alphas, self._objective, self._model, delta
         )
+        self.x_train, self.y_train = prepare_train(x, y, self._alphas)
+        self.dataset = self._train_dtype(data=self.x_train, label=self.y_train)
 
-    def train(self, params: Dict[str, Any]) -> ModelLike:
+    def train(
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        n_trials: int = 20,
+    ) -> ModelLike:
         """
         Train regressor and return model
         Args:
-            params (Dict[str, Any])
-
+            params (Optional[Dict[str, Any]])
+                train parameter, default = None
+                if None, hyperparameter tuning executed
+            n_trials (int):
+                the number of hyperparameter tuning, defalut = 3
         Returns:
             ModelLike
         """
-        self._params = self.__set_monotone_constraints(params=params)
+        if params is None:
+            params = self.hpo(n_trials=n_trials)
 
-        if self._model == ModelName.lightgbm:
+        self._params = set_monotone_constraints(
+            params=params,
+            x_train=self.x_train,
+            constraints_fucs=self._constraints_type,
+        )
+
+        if self.__is_lgb:
             self._params.update({MQStr.obj: self._MQObjective.fobj})
             self.model = lgb.train(
                 train_set=self.dataset,
@@ -98,25 +117,19 @@ class MQRegressor:
                 feval=self._MQObjective.feval,
                 valid_sets=[self.dataset],
             )
-            self._train_score = self.model.best_score[MQStr.trg][
-                self._MQObjective.eval_name
-            ]
-        else:
-            _evals_result = {}
+        elif self.__is_xgb:
             self.model = xgb.train(
                 dtrain=self.dataset,
                 verbose_eval=False,
                 params=self._params,
                 obj=self._MQObjective.fobj,
                 custom_metric=self._MQObjective.feval,
-                evals=[
-                    (self.dataset, MQStr.tr),
-                ],
-                evals_result=_evals_result,
+                # evals=[
+                #     (self.dataset, "train"),
+                # ],
             )
-            self._train_score = min(
-                _evals_result[MQStr.tr][self._MQObjective.eval_name]
-            )
+        else:
+            raise FittingException("model name is invalid")
         self._fitted = True
         return self.model
 
@@ -137,46 +150,84 @@ class MQRegressor:
         self.__is_fitted
         alphas = alpha_validate(alphas)
         _x = prepare_x(x, alphas)
-        _x = self._funcs.get(TypeName.predict_dtype)(_x)
+        _x = self._predict_dtype(_x)
         _pred = self.model.predict(_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
 
-    def __set_monotone_constraints(
-        self, params: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """
-        Set monotone constraints in params
-        Args:
-            params (Dict[str, Any])
-        """
-        if MQStr.obj in params:
-            raise ValidationException(
-                "The parameter named 'objective' must not be included in params"
+    def hpo(self, n_trials, get_params_func=get_params) -> Dict[str, Any]:
+        x_train, x_valid, y_train, y_valid = train_valid_split(
+            self.x_train, self.y_train
+        )
+
+        def study_func_func(trial):
+            return self.__optuna_objective(
+                trial,
+                x_train,
+                y_train,
+                x_valid,
+                y_valid,
+                self._constraints_type,
+                get_params_func,
             )
-        _params = params.copy() if params is not None else dict()
-        if MQStr.mono in _params:
-            _monotone_constraints = list(_params[MQStr.mono])
-            _monotone_constraints.append(1)
-            _params[MQStr.mono] = self._funcs.get(TypeName.constraints_type)(
-                _monotone_constraints
+
+        study = optuna.create_study(
+            study_name=f"MQBoost_{self._model}",
+            direction="minimize",
+            load_if_exists=True,
+        )
+        study.optimize(study_func_func, n_trials=n_trials)
+        return study.best_params
+
+    def __optuna_objective(
+        self,
+        trial: optuna.Trial,
+        x_train: XdataLike,
+        y_train: YdataLike,
+        x_valid: XdataLike,
+        y_valid: YdataLike,
+        constraints_func: Callable,
+        get_params_func: Callable,
+    ) -> float:
+        params = get_params_func(trial, self._model)
+        params = set_monotone_constraints(
+            params, x_train=x_train, constraints_fucs=constraints_func
+        )
+        dvalid = self._train_dtype(x_valid, label=y_valid)
+        if self.__is_lgb:
+            model_params = dict(
+                params=params,
+                train_set=self._train_dtype(x_train, label=y_train),
+                valid_sets=self._train_dtype(x_valid, label=y_valid),
             )
+            _gbm = lgb.train(**model_params)
+            _preds = _gbm.predict(x_valid, num_iteration=_gbm.best_iteration)
+            _, loss = eval_loss(_preds, dvalid, self._alphas)
+        elif self.__is_xgb:
+            model_params = dict(
+                params=params,
+                dtrain=self._train_dtype(x_train, label=y_train),
+                early_stopping_rounds=19,
+                evals=[
+                    (self._train_dtype(x_valid, label=y_valid), MQStr.valid),
+                ],
+            )
+            _gbm = xgb.train(**model_params)
+            _preds = _gbm.predict(self._predict_dtype(x_valid))
+            _, loss = eval_loss(_preds, dvalid, self._alphas)
         else:
-            _params.update(
-                {
-                    MQStr.mono: self._funcs.get(TypeName.constraints_type)(
-                        [1 if "_tau" == col else 0 for col in self.x_train.columns]
-                    )
-                }
-            )
-        return _params
+            raise FittingException("model name is invalid")
+        return loss
+
+    @property
+    def __is_lgb(self) -> bool:
+        return self._model == ModelName.lightgbm
+
+    @property
+    def __is_xgb(self) -> bool:
+        return self._model == ModelName.xgboost
 
     @property
     def __is_fitted(self) -> None:
         if not getattr(self, "_fitted", False):
             raise FittingException("train must be executed before predict")
-
-    @property
-    def train_score(self) -> float:
-        self.__is_fitted
-        return float(self._train_score)

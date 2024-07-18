@@ -44,8 +44,7 @@ class TypeName(BaseName):
 class MQStr(BaseName):
     mono: str = "monotone_constraints"
     obj: str = "objective"
-    tr: str = "train"
-    trg: str = "training"
+    valid: str = "valid"
 
 
 # Functions
