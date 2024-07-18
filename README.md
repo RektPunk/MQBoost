@@ -30,7 +30,7 @@ pip install mqboost
 
 ## Parameters
 ```python
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------#
 # init
 x                 # Explanatory data (e.g., pd.DataFrame)
                   # Column named '_tau' must not be included
@@ -39,26 +39,27 @@ alphas            # Target quantiles
                   # Must be in ascending order and contain no duplicates
 objective         # [Optional] Objective to minimize, "check" (default) or "huber"
 model             # [Optional] Boosting algorithm to use, "lightgbm" (default) or "xgboost"
-delta             # [Optional] Parameter for "huber" objective; used only when objective == "huber"
+delta             # [Optional] Parameter for "huber" objective;
+                  # Used only when objective == "huber"
                   # Must be smaller than 0.1
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------#
 # train           # train quantile model
                   #  Any params related to model can be used except "objective"
 
 params            # [Optional] Model parameters; defaults to None.
                   # If None, hyperparameter optimization is executed.
 n_trials          # [Optional] Number of hyperparameter optimization trials
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------#
 # predict         # predict with input data
 
 x                 # Explanatory data (e.g., pd.DataFrame)
 alphas            # Target quantiles for prediction
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------#
 # optimize_params
 
 n_trials          # Number of hyperparameter optimization trials
 get_params_func   # Manual hyperparameter function
-#-------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------#
 ```
 
 
