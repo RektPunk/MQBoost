@@ -1,13 +1,12 @@
-from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
-from typing import Any
+from typing import Any, List, Tuple
 
-import lightgbm as lgb
 import numpy as np
-import xgboost as xgb
 
-_DtrainLike = lgb.basic.Dataset | xgb.DMatrix
+from mqboost.base import DtrainLike, ModelName, ObjectiveName
+from mqboost.utils import delta_validate
+
 CHECK_LOSS: str = "check_loss"
 
 
@@ -33,27 +32,27 @@ def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
 
 def _train_pred_reshape(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
+    dtrain: DtrainLike,
     len_alpha: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    _y_train = dtrain.get_label()
+) -> Tuple[np.ndarray, np.ndarray]:
+    _y_train: np.ndarray = dtrain.get_label()
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
 def _compute_grads_hess(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
-    alphas: list[float],
+    dtrain: DtrainLike,
+    alphas: List[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
     **kwargs: Any,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute gradients for given loss function
     Args:
         y_train (np.ndarray)
         y_pred (np.ndarray)
-        alphas (list[float])
-        grad_fn (Callable)
+        alphas (List[float])
+        grad_fn (Callable[[np.ndarray, float, Any], np.ndarray])
         **kwargs (Any): Additional arguments for grad_fn
 
     Returns:
@@ -73,22 +72,19 @@ check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
 huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)
 
 
-def xgb_eval(
+def eval_loss(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
-    alphas: list[float],
-) -> float:
+    dtrain: DtrainLike,
+    alphas: List[float],
+) -> Tuple[str, float]:
     """
-    Compute gradients for given loss function
+    eval funcs
     Args:
-        y_train (np.ndarray)
         y_pred (np.ndarray)
-        alphas (list[float])
-        grad_fn (Callable)
-        **kwargs (Any): Additional arguments for grad_fn
-
+        d_train (DtrainLike)
+        alphas (List[float])
     Returns:
-        np.ndarray
+        Tuple[str, float]
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
@@ -100,10 +96,59 @@ def xgb_eval(
     return CHECK_LOSS, loss
 
 
-def lgb_eval(
+def _lgb_eval_loss(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
-    alphas: list[float],
-) -> tuple[np.ndarray, np.ndarray]:
-    loss_str, loss = xgb_eval(y_pred, dtrain, alphas)
+    dtrain: DtrainLike,
+    alphas: List[float],
+) -> Tuple[str, np.ndarray, bool]:
+    loss_str, loss = eval_loss(y_pred, dtrain, alphas)
     return loss_str, loss, False
+
+
+class MQObjective:
+    """
+    Monotone quantile objective and evaluation function
+    Attributes
+    ----------
+    alphas (List[float])
+    objective (ObjectiveName)
+    model (ModelName)
+    delta (float)
+
+    Property
+    ----
+    fobj
+    feval
+    eval_name
+    """
+
+    def __init__(
+        self,
+        alphas: List[float],
+        objective: ObjectiveName,
+        model: ModelName,
+        delta: float,
+    ) -> None:
+        if objective == ObjectiveName.huber:
+            delta_validate(delta)
+            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
+        elif objective == ObjectiveName.check:
+            self._fobj = partial(check_loss_grad_hess, alphas=alphas)
+
+        self._eval_name = CHECK_LOSS
+        if model == ModelName.lightgbm:
+            self._feval = partial(_lgb_eval_loss, alphas=alphas)
+        elif model == ModelName.xgboost:
+            self._feval = partial(eval_loss, alphas=alphas)
+
+    @property
+    def fobj(self) -> Callable:
+        return self._fobj
+
+    @property
+    def feval(self) -> Callable:
+        return self._feval
+
+    @property
+    def eval_name(self) -> str:
+        return self._eval_name

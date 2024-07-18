@@ -1,18 +1,11 @@
-from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Dict, List, Union
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-
-from mqboost.objective import (
-    check_loss_grad_hess,
-    huber_loss_grad_hess,
-    lgb_eval,
-    xgb_eval,
-)
 
 
 # Name
@@ -40,37 +33,42 @@ class ObjectiveName(BaseName):
     huber: str = "huber"
 
 
+@dataclass
+class TypeName(BaseName):
+    train_dtype: str = "train_dtype"
+    predict_dtype: str = "predict_dtype"
+    constraints_type: str = "constraints_type"
+
+
+@dataclass
+class MQStr(BaseName):
+    mono: str = "monotone_constraints"
+    obj: str = "objective"
+    valid: str = "valid"
+
+
 # Functions
-TRAIN_DATASET_FUNC: dict[str, Callable] = {
-    "lightgbm": lgb.Dataset,
-    "xgboost": xgb.DMatrix,
+FUNC_TYPE: Dict[str, Dict[str, Callable]] = {
+    ModelName.lightgbm: {
+        TypeName.train_dtype: lgb.Dataset,
+        TypeName.predict_dtype: lambda x: x,
+        TypeName.constraints_type: list,
+    },
+    ModelName.xgboost: {
+        TypeName.train_dtype: xgb.DMatrix,
+        TypeName.predict_dtype: xgb.DMatrix,
+        TypeName.constraints_type: tuple,
+    },
 }
 
-MONOTONE_CONSTRAINTS_TYPE: dict[str, Callable] = {
-    "lightgbm": list,
-    "xgboost": tuple,
-}
-
-PREDICT_DATASET_FUNC: dict[str, Callable] = {
-    "lightgbm": lambda x: x,
-    "xgboost": xgb.DMatrix,
-}
-
-OBJECTIVE_FUNC: dict[str, Callable] = {
-    "check": check_loss_grad_hess,
-    "huber": huber_loss_grad_hess,
-}
-
-EVAL_FUNC: dict[str, Callable] = {
-    "lightgbm": lgb_eval,
-    "xgboost": xgb_eval,
-}
 
 # Type
-XdataLike = pd.DataFrame | pd.Series | np.ndarray
-YdataLike = pd.Series | np.ndarray
-AlphaLike = list[float] | float
-ModelLike = lgb.basic.Booster | xgb.Booster
+XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
+YdataLike = Union[pd.Series, np.ndarray]
+AlphaLike = Union[List[float], float]
+ModelLike = Union[lgb.basic.Booster, xgb.Booster]
+DtrainLike = lgb.basic.Dataset | xgb.DMatrix
+
 
 # Exception
 class FittingException(Exception):

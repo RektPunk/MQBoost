@@ -1,5 +1,5 @@
-from __future__ import annotations
 from itertools import chain, repeat
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -9,14 +9,14 @@ from mqboost.base import AlphaLike, ValidationException, XdataLike, YdataLike
 
 def alpha_validate(
     alphas: AlphaLike,
-) -> list[float]:
+) -> List[float]:
     """
     Validate alphas
     Args:
         alphas (AlphaLike)
 
     Returns:
-        list[float]
+        List[float]
     """
     if isinstance(alphas, float):
         alphas = [alphas]
@@ -38,13 +38,13 @@ def alpha_validate(
 
 def prepare_x(
     x: XdataLike,
-    alphas: list[float],
+    alphas: List[float],
 ) -> pd.DataFrame:
     """
     Return stacked X
     Args:
         x (XdataLike)
-        alphas (list[float])
+        alphas (List[float])
 
     Returns:
         pd.DataFrame
@@ -68,17 +68,17 @@ def prepare_x(
 def prepare_train(
     x: XdataLike,
     y: YdataLike,
-    alphas: list[float],
-) -> tuple[pd.DataFrame | np.ndarray]:
+    alphas: List[float],
+) -> Tuple[pd.DataFrame, np.ndarray]:
     """
     Return stacked X, y for training
     Args:
         x (XdataLike)
         y (YdataLike)
-        alphas (list[float])
+        alphas (List[float])
 
     Returns:
-        tuple[pd.DataFrame | np.ndarray]
+        Tuple[pd.DataFrame, np.ndarray]
     """
     _train_df = prepare_x(x, alphas)
     _repeated_y = np.concatenate(list(repeat(y, len(alphas))))
@@ -86,8 +86,10 @@ def prepare_train(
 
 
 def delta_validate(delta: float) -> None:
+    _delta_upper_bound: float = 0.1
+
     if not isinstance(delta, float):
         raise ValidationException("delta is not float type")
 
-    if delta > 0.1:
+    if delta > _delta_upper_bound:
         raise ValidationException("Delta must be smaller than 0.1")
