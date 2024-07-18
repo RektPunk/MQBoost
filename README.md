@@ -1,10 +1,21 @@
-# MQBoost
+<div style="text-align: center;">
+  <img src="https://capsule-render.vercel.app/api?type=transparent&fontColor=ffffff&text=MQBoost&height=120&fontSize=90">
+</div>
+<p align="center">
+  <a href="https://github.com/RektPunk/MQBoost/releases/latest">
+    <img alt="release" src="https://img.shields.io/github/v/release/RektPunk/mqboost.svg">
+  </a>
+  <a href="https://pypi.python.org/pypi/mqboost/">
+    <img alt="PyPI" src="https://badge.fury.io/py/mqboost.svg">
+  </a>
+<!--   <a href="LICENSE">
+    <img alt="license" src="https://img.shields.io/badge/license-MIT-indigo.sv">
+  </a> -->
+</p>
 
-A multiple quantiles estimation model that maintains the non-crossing condition (or monotone quantile condition) based on:
-- [LightGBM](https://github.com/microsoft/LightGBM)
-- [XGBoost](https://github.com/dmlc/xgboost)
+**MQBoost** introduces an advanced model for estimating multiple quantiles while ensuring the non-crossing condition (monotone quantile condition). This model harnesses the capabilities of both [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks.
 
-with the hyperparameter optimization framework [Optuna](https://github.com/optuna/optuna).
+By implementing the hyperparameter optimization prowess of [Optuna](https://github.com/optuna/optuna), this model achieves great performance and precision. Optuna's optimization algorithms fine-tune the hyperparameters, ensuring the model operates efficiently.
 
 # Installation
 Install using pip:
@@ -42,24 +53,24 @@ optimize_params # Optimize hyperparameter with using optuna
 import numpy as np
 from mqboost import MQRegressor
 
-## Generate sample
+# Generate sample data
 sample_size = 500
 x = np.linspace(-10, 10, sample_size)
 y = np.sin(x) + np.random.uniform(-0.4, 0.4, sample_size)
 x_test = np.linspace(-10, 10, sample_size)
 y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 
-## target quantiles
+# Define target quantiles
 alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 
-## model name
-model = "lightgbm" # "xgboost"
+# Specify model type
+model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
-## objective funtion
-objective = "huber" # "check"
-delta = 0.01 # set when objective is huber default 0.05
+# Set objective function
+objective = "huber"  # Options: "huber" or "check"
+delta = 0.01  # Set when objective is "huber", default is 0.05
 
-## LightGBM based quantile regressor
+# Initialize the LightGBM-based quantile regressor
 mq_lgb = MQRegressor(
     x=x,
     y=y_test,
@@ -69,7 +80,7 @@ mq_lgb = MQRegressor(
     delta=delta,
 )
 
-## train with fixed params
+# Train the model with fixed parameters
 lgb_params = {
     "max_depth": 4,
     "num_leaves": 15,
@@ -78,13 +89,12 @@ lgb_params = {
 }
 mq_lgb.train(params=lgb_params)
 
-## train with optuna
-mq_lgb.train(n_trials = 10) # the number of trials
-
-## Same process
-# best_params = mq_lgb.optimize_params(n_trials = 10)
+# Train the model with Optuna hyperparameter optimization
+mq_lgb.train(n_trials=10)
+# Alternatively, you can optimize parameters first and then train
+# best_params = mq_lgb.optimize_params(n_trials=10)
 # mq_lgb.train(params=best_params)
 
-## predict
+# Predict using the trained model
 preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
 ```
