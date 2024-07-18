@@ -25,32 +25,49 @@ pip install mqboost
 
 # Usage
 ## Features
-- **MQRegressor**: quantile regressor
+- **MQRegressor**: A model for quantile regression
+
 
 ## Parameters
 ```python
-x         # Explanatory data (e.g. pd.DataFrame)
-          # Column name '_tau' must be not included
-y         # Response data (e.g. np.ndarray)
-alphas    # Target quantiles
-          # It must be in ascending order and not contain duplicates
-objective # [Optional] objective to minimize, "check"(default) or "huber"
-model     # [Optional] boost algorithm to use, "lightgbm"(default) or "xgboost"
-delta     # [Optional] parameter in "huber" objective, only used when objective == "huber"
-          # It must be smaller than 0.1
+#-------------------------------------------------------------------------------------------------#
+# init
+x                 # Explanatory data (e.g., pd.DataFrame)
+                  # Column named '_tau' must not be included
+y                 # Response data (e.g., np.ndarray)
+alphas            # Target quantiles
+                  # Must be in ascending order and contain no duplicates
+objective         # [Optional] Objective to minimize, "check" (default) or "huber"
+model             # [Optional] Boosting algorithm to use, "lightgbm" (default) or "xgboost"
+delta             # [Optional] Parameter for "huber" objective; used only when objective == "huber"
+                  # Must be smaller than 0.1
+#-------------------------------------------------------------------------------------------------#
+# train           # train quantile model
+                  #  Any params related to model can be used except "objective"
+
+params            # [Optional] Model parameters; defaults to None.
+                  # If None, hyperparameter optimization is executed.
+n_trials          # [Optional] Number of hyperparameter optimization trials
+#-------------------------------------------------------------------------------------------------#
+# predict         # predict with input data
+
+x                 # Explanatory data (e.g., pd.DataFrame)
+alphas            # Target quantiles for prediction
+#-------------------------------------------------------------------------------------------------#
+# optimize_params
+
+n_trials          # Number of hyperparameter optimization trials
+get_params_func   # Manual hyperparameter function
+#-------------------------------------------------------------------------------------------------#
 ```
 
-## Methods
-```python
-train           # train quantile model
-                # Any params related to model can be used except "objective"
-predict         # predict with input data
-optimize_params # Optimize hyperparameter with using optuna
-```
+
 
 ## Example
 ```python
 import numpy as np
+from optuna import Trial
+
 from mqboost import MQRegressor
 
 # Generate sample data
@@ -91,9 +108,27 @@ mq_lgb.train(params=lgb_params)
 
 # Train the model with Optuna hyperparameter optimization
 mq_lgb.train(n_trials=10)
+
 # Alternatively, you can optimize parameters first and then train
-# best_params = mq_lgb.optimize_params(n_trials=10)
-# mq_lgb.train(params=best_params)
+best_params = mq_lgb.optimize_params(n_trials=10)
+mq_lgb.train(params=best_params)
+
+# Moreover, you have the option to optimize parameters by implementing functions manually
+def get_params(trial: Trial, model: str):
+    return {
+        "verbose": -1,
+        "learning_rate": trial.suggest_float("learning_rate", 1e-2, 1.0, log=True),
+        "max_depth": trial.suggest_int("max_depth", 1, 10),
+        "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
+        "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
+        "num_leaves": trial.suggest_int("num_leaves", 2, 256),
+        "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
+        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
+    }
+
+best_params = mq_lgb.optimize_params(n_trials=10, get_params_func=get_params)
+mq_lgb.train(params=best_params)
 
 # Predict using the trained model
 preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
