@@ -23,14 +23,16 @@ alphas    # Target quantiles
           # It must be in ascending order and not contain duplicates
 objective # [Optional] objective to minimize, "check"(default) or "huber"
 model     # [Optional] boost algorithm to use, "lightgbm"(default) or "xgboost"
-delta     # [Optional] parameter in "huber" objective, used when objective == "huber"
+delta     # [Optional] parameter in "huber" objective, only used when objective == "huber"
           # It must be smaller than 0.1
 ```
+
 ## Methods
 ```python
-train     # train quantile model
-          # Any params related to model can be used except "objective"
-predict   # predict with input data
+train           # train quantile model
+                # Any params related to model can be used except "objective"
+predict         # predict with input data
+optimize_params # Optimize hyperparameter with using
 ```
 
 ## Example
