@@ -72,11 +72,11 @@ check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
 huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)
 
 
-def _eval(
+def eval_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
-) -> float:
+) -> Tuple[str, float]:
     """
     eval funcs
     Args:
@@ -87,7 +87,7 @@ def _eval(
         **kwargs (Any): Additional arguments for grad_fn
 
     Returns:
-        np.ndarray
+        Tuple[str, float]
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
@@ -99,12 +99,12 @@ def _eval(
     return CHECK_LOSS, loss
 
 
-def lgb_eval(
+def _lgb_eval_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[np.ndarray, np.ndarray]:
-    loss_str, loss = _eval(y_pred, dtrain, alphas)
+    loss_str, loss = eval_loss(y_pred, dtrain, alphas)
     return loss_str, loss, False
 
 
@@ -124,9 +124,9 @@ class MQObjective:
 
         self._eval_name = CHECK_LOSS
         if model == ModelName.lightgbm:
-            self._feval = partial(lgb_eval, alphas=alphas)
+            self._feval = partial(_lgb_eval_loss, alphas=alphas)
         else:
-            self._feval = partial(_eval, alphas=alphas)
+            self._feval = partial(eval_loss, alphas=alphas)
 
     @property
     def fobj(self) -> Callable:
