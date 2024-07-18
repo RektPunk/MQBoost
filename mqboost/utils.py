@@ -80,7 +80,7 @@ def prepare_train(
     Returns:
         Tuple[pd.DataFrame, np.ndarray]
     """
-    _train_df = prepare_x(x, alphas)
+    _train_df = prepare_x(x=x, alphas=alphas)
     _repeated_y = np.concatenate(list(repeat(y, len(alphas))))
     return (_train_df, _repeated_y)
 

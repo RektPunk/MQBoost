@@ -15,7 +15,7 @@ def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
 
 
 def _rho(u: np.ndarray, alpha: float) -> np.ndarray:
-    return -u * _grad_rho(u, alpha)
+    return -u * _grad_rho(u=u, alpha=alpha)
 
 
 def _error_delta_compare(u: np.ndarray, delta: float):
@@ -24,9 +24,9 @@ def _error_delta_compare(u: np.ndarray, delta: float):
 
 
 def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
-    _smaller_delta, _bigger_delta = _error_delta_compare(u, delta)
-    _g = _grad_rho(u, alpha)
-    _r = _rho(u, alpha)
+    _smaller_delta, _bigger_delta = _error_delta_compare(u=u, delta=delta)
+    _g = _grad_rho(u=u, alpha=alpha)
+    _r = _rho(u=u, alpha=alpha)
     return _r * _smaller_delta + _g * _bigger_delta
 
 
@@ -59,7 +59,9 @@ def _compute_grads_hess(
         np.ndarray
     """
     _len_alpha = len(alphas)
-    _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
+    _y_train, _y_pred = _train_pred_reshape(
+        y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
+    )
     grads = []
     for alpha_inx in range(len(alphas)):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
@@ -87,7 +89,9 @@ def eval_loss(
         Tuple[str, float]
     """
     _len_alpha = len(alphas)
-    _y_train, _y_pred = _train_pred_reshape(y_pred, dtrain, _len_alpha)
+    _y_train, _y_pred = _train_pred_reshape(
+        y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
+    )
     loss: float = 0.0
     for alpha_inx in range(len(alphas)):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
@@ -101,7 +105,7 @@ def _lgb_eval_loss(
     dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[str, np.ndarray, bool]:
-    loss_str, loss = eval_loss(y_pred, dtrain, alphas)
+    loss_str, loss = eval_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return loss_str, loss, False
 
 
@@ -130,7 +134,7 @@ class MQObjective:
         delta: float,
     ) -> None:
         if objective == ObjectiveName.huber:
-            delta_validate(delta)
+            delta_validate(delta=delta)
             self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
         elif objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)

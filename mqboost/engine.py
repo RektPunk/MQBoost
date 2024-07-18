@@ -65,10 +65,13 @@ class MQRegressor:
         self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
         self._constraints_type: Callable = _funcs.get(TypeName.constraints_type)
-        self._MQObjective = MQObjective(
-            self._alphas, self._objective, self._model, delta
+        self._MQObj = MQObjective(
+            alphas=self._alphas,
+            objective=self._objective,
+            model=self._model,
+            delta=delta,
         )
-        self.x_train, self.y_train = prepare_train(x, y, self._alphas)
+        self.x_train, self.y_train = prepare_train(x=x, y=y, alphas=self._alphas)
         self.dataset = self._train_dtype(data=self.x_train, label=self.y_train)
 
     def train(
@@ -95,11 +98,11 @@ class MQRegressor:
         )
 
         if self.__is_lgb:
-            self._params.update({MQStr.obj: self._MQObjective.fobj})
+            self._params.update({MQStr.obj: self._MQObj.fobj})
             self.model = lgb.train(
                 train_set=self.dataset,
                 params=self._params,
-                feval=self._MQObjective.feval,
+                feval=self._MQObj.feval,
                 valid_sets=[self.dataset],
             )
         elif self.__is_xgb:
@@ -107,8 +110,8 @@ class MQRegressor:
                 dtrain=self.dataset,
                 verbose_eval=False,
                 params=self._params,
-                obj=self._MQObjective.fobj,
-                custom_metric=self._MQObjective.feval,
+                obj=self._MQObj.fobj,
+                custom_metric=self._MQObj.feval,
                 evals=[(self.dataset, "train")],
             )
         else:
@@ -129,10 +132,10 @@ class MQRegressor:
             np.ndarray
         """
         self.__is_fitted
-        alphas = alpha_validate(alphas)
-        _x = prepare_x(x, alphas)
+        alphas = alpha_validate(alphas=alphas)
+        _x = prepare_x(x=x, alphas=alphas)
         _x = self._predict_dtype(_x)
-        _pred = self.model.predict(_x)
+        _pred = self.model.predict(data=_x)
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
 
@@ -163,7 +166,7 @@ class MQRegressor:
             Dict[str, Any]: best params
         """
         x_train, x_valid, y_train, y_valid = train_valid_split(
-            self.x_train, self.y_train
+            x_train=self.x_train, y_train=self.y_train
         )
 
         def _study_func(trial: optuna.Trial) -> float:
@@ -212,30 +215,33 @@ class MQRegressor:
         params = set_monotone_constraints(
             params, x_train=x_train, constraints_fucs=constraints_func
         )
-        dvalid = self._train_dtype(x_valid, label=y_valid)
+        dtrain = self._train_dtype(data=x_train, label=y_train)
+        dvalid = self._train_dtype(data=x_valid, label=y_valid)
         if self.__is_lgb:
             model_params = dict(
                 params=params,
-                train_set=self._train_dtype(x_train, label=y_train),
-                valid_sets=self._train_dtype(x_valid, label=y_valid),
+                train_set=dtrain,
+                valid_sets=dvalid,
             )
             _gbm = lgb.train(**model_params)
-            _preds = _gbm.predict(x_valid, num_iteration=_gbm.best_iteration)
-            _, loss, _ = self._MQObjective.feval(y_pred=_preds, dtrain=dvalid)
+            _preds = _gbm.predict(data=x_valid, num_iteration=_gbm.best_iteration)
+            _, loss, _ = self._MQObj.feval(y_pred=_preds, dtrain=dvalid)
         elif self.__is_xgb:
             model_params = dict(
                 params=params,
-                dtrain=self._train_dtype(x_train, label=y_train),
-                evals=[
-                    (self._train_dtype(x_valid, label=y_valid), MQStr.valid),
-                ],
+                dtrain=dtrain,
+                evals=[(dvalid, MQStr.valid)],
             )
             _gbm = xgb.train(**model_params)
-            _preds = _gbm.predict(self._predict_dtype(x_valid))
-            _, loss = self._MQObjective.feval(y_pred=_preds, dtrain=dvalid)
+            _preds = _gbm.predict(data=self._predict_dtype(x_valid))
+            _, loss = self._MQObj.feval(y_pred=_preds, dtrain=dvalid)
         else:
             raise FittingException("model name is invalid")
         return loss
+
+    @property
+    def MQObj(self) -> MQObjective:
+        return self._MQObj
 
     @property
     def __is_lgb(self) -> bool:
