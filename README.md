@@ -1,8 +1,10 @@
 # MQBoost
 
-Multiple quantiles estimation model maintaining non-crossing condition (or monotone quantile condition) using:
-- LightGBM
-- XGBoost
+A multiple quantiles estimation model that maintains the non-crossing condition (or monotone quantile condition) based on:
+- [LightGBM](https://github.com/microsoft/LightGBM)
+- [XGBoost](https://github.com/dmlc/xgboost)
+
+with the hyperparameter optimization framework [Optuna](https://github.com/optuna/optuna).
 
 # Installation
 Install using pip:
@@ -32,7 +34,7 @@ delta     # [Optional] parameter in "huber" objective, only used when objective 
 train           # train quantile model
                 # Any params related to model can be used except "objective"
 predict         # predict with input data
-optimize_params # Optimize hyperparameter with using
+optimize_params # Optimize hyperparameter with using optuna
 ```
 
 ## Example
@@ -67,7 +69,7 @@ mq_lgb = MQRegressor(
     delta=delta,
 )
 
-## train
+## train with fixed params
 lgb_params = {
     "max_depth": 4,
     "num_leaves": 15,
@@ -75,6 +77,13 @@ lgb_params = {
     "boosting_type": "gbdt",
 }
 mq_lgb.train(params=lgb_params)
+
+## train with optuna
+mq_lgb.train(n_trials = 10) # the number of trials
+
+## Same process
+# best_params = mq_lgb.optimize_params(n_trials = 10)
+# mq_lgb.train(params=best_params)
 
 ## predict
 preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
