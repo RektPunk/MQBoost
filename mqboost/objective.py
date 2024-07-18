@@ -83,9 +83,6 @@ def eval_loss(
         y_pred (np.ndarray)
         d_train (DtrainLike)
         alphas (List[float])
-        grad_fn (Callable)
-        **kwargs (Any): Additional arguments for grad_fn
-
     Returns:
         Tuple[str, float]
     """
@@ -103,12 +100,28 @@ def _lgb_eval_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[str, np.ndarray, bool]:
     loss_str, loss = eval_loss(y_pred, dtrain, alphas)
     return loss_str, loss, False
 
 
 class MQObjective:
+    """
+    Monotone quantile objective and evaluation function
+    Attributes
+    ----------
+    alphas (List[float])
+    objective (ObjectiveName)
+    model (ModelName)
+    delta (float)
+
+    Property
+    ----
+    fobj
+    feval
+    eval_name
+    """
+
     def __init__(
         self,
         alphas: List[float],
@@ -119,13 +132,13 @@ class MQObjective:
         if objective == ObjectiveName.huber:
             delta_validate(delta)
             self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
-        else:
+        elif objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
 
         self._eval_name = CHECK_LOSS
         if model == ModelName.lightgbm:
             self._feval = partial(_lgb_eval_loss, alphas=alphas)
-        else:
+        elif model == ModelName.xgboost:
             self._feval = partial(eval_loss, alphas=alphas)
 
     @property

@@ -10,10 +10,18 @@ def set_monotone_constraints(
     Set monotone constraints in params
     Args:
         params (Dict[str, Any])
+        x_train (XdataLike)
+        constraints_fucs (Callable)
+
+    Raises:
+        ValidationException: when "objective" is in params.keys()
+
+    Returns:
+        Dict[str, Any]
     """
     if MQStr.obj in params:
         raise ValidationException(
-            "The parameter named 'objective' must not be included in params"
+            "The parameter named 'objective' must be excluded in params"
         )
     _params = params.copy()
     if MQStr.mono in _params:

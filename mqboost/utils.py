@@ -1,5 +1,5 @@
 from itertools import chain, repeat
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -69,7 +69,7 @@ def prepare_train(
     x: XdataLike,
     y: YdataLike,
     alphas: List[float],
-) -> Tuple[Union[pd.DataFrame, np.ndarray]]:
+) -> Tuple[pd.DataFrame, np.ndarray]:
     """
     Return stacked X, y for training
     Args:
@@ -78,7 +78,7 @@ def prepare_train(
         alphas (List[float])
 
     Returns:
-        Tuple[Union[pd.DataFrame, np.ndarray]]
+        Tuple[pd.DataFrame, np.ndarray]
     """
     _train_df = prepare_x(x, alphas)
     _repeated_y = np.concatenate(list(repeat(y, len(alphas))))

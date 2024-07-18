@@ -3,13 +3,13 @@ from typing import Any, Callable, Dict, Optional
 import lightgbm as lgb
 import numpy as np
 import optuna
+import pandas as pd
 import xgboost as xgb
 
 from mqboost.base import (
     FUNC_TYPE,
     AlphaLike,
     FittingException,
-    ModelLike,
     ModelName,
     MQStr,
     ObjectiveName,
@@ -19,7 +19,7 @@ from mqboost.base import (
 )
 from mqboost.constraints import set_monotone_constraints
 from mqboost.hpo import get_params, train_valid_split
-from mqboost.objective import MQObjective, eval_loss
+from mqboost.objective import MQObjective
 from mqboost.utils import alpha_validate, prepare_train, prepare_x
 
 __all__ = ["MQRegressor"]
@@ -27,29 +27,26 @@ __all__ = ["MQRegressor"]
 
 class MQRegressor:
     """
-    Monotone quantile regressor which preserving monotonicity among quantiles with LightGBM
+    Monotone quantile regressor which preserving monotonicity among quantiles
     Attributes
     ----------
     x: XdataLike
     y: YdataLike
     alphas: AlphaLike
-        It must be in ascending order and not contain duplicates
+        It must be in ascending order and not contain duplicates.
     objective: str
-        Determine objective function. options: "check" (default), "huber"
-        If objective is "huber", you can set "delta" (default = 0.05)
-        "delta" must be smaller than 0.1
+        Determine objective function. Defaults to "check", another option is "huber".
     model: str
-        Determine base model. options: "lightgbm" (default), "xgboost"
-    delta: float
+        Determine base model. Defaults to "lightgbm", another option is "xgboost".
+    delta (float, optional).
+        Only used with "huber" objective.
+        Defaults to 0.05 and must be smaller than 0.1.
 
     Methods
     ----------
     train
     predict
-
-    Property
-    ----------
-    train_score
+    optimize_params
     """
 
     def __init__(
@@ -61,16 +58,6 @@ class MQRegressor:
         objective: str = ObjectiveName.check,
         delta: float = 0.05,
     ) -> None:
-        """
-        Set objective, dataset
-        Args:
-            x (XdataLike)
-            y (YdataLike)
-            alphas (AlphaLike)
-            model (ModelName)
-            objective (ObjectiveName)
-            delta (float)
-        """
         self._alphas = alpha_validate(alphas)
         self._model = ModelName().get(model)
         self._objective = ObjectiveName().get(objective)
@@ -88,20 +75,18 @@ class MQRegressor:
         self,
         params: Optional[Dict[str, Any]] = None,
         n_trials: int = 20,
-    ) -> ModelLike:
+    ) -> None:
         """
         Train regressor and return model
         Args:
             params (Optional[Dict[str, Any]])
-                train parameter, default = None
-                if None, hyperparameter tuning executed
+                Train parameter. Default to None.
+                If None, hyperparameter optimization process is executed.
             n_trials (int):
-                the number of hyperparameter tuning, defalut = 3
-        Returns:
-            ModelLike
+                The number of hyperparameter tuning. Default to 3.
         """
         if params is None:
-            params = self.hpo(n_trials=n_trials)
+            params = self.optimize_params(n_trials=n_trials)
 
         self._params = set_monotone_constraints(
             params=params,
@@ -124,14 +109,11 @@ class MQRegressor:
                 params=self._params,
                 obj=self._MQObjective.fobj,
                 custom_metric=self._MQObjective.feval,
-                # evals=[
-                #     (self.dataset, "train"),
-                # ],
+                evals=[(self.dataset, "train")],
             )
         else:
             raise FittingException("model name is invalid")
         self._fitted = True
-        return self.model
 
     def predict(
         self,
@@ -143,7 +125,6 @@ class MQRegressor:
         Args:
             x (XdataLike)
             alphas (AlphaLike)
-
         Returns:
             np.ndarray
         """
@@ -155,20 +136,33 @@ class MQRegressor:
         _pred = _pred.reshape(len(alphas), len(x))
         return _pred
 
-    def hpo(self, n_trials, get_params_func=get_params) -> Dict[str, Any]:
+    def optimize_params(
+        self,
+        n_trials: int,
+        get_params_func: Callable = get_params,
+    ) -> Dict[str, Any]:
+        """
+        Optimize hyperparameter
+        Args:
+            n_trials (int)
+            get_params_func (Callable, optional).
+                Defaults to get_params.
+        Returns:
+            Dict[str, Any]
+        """
         x_train, x_valid, y_train, y_valid = train_valid_split(
             self.x_train, self.y_train
         )
 
-        def study_func_func(trial):
+        def study_func_func(trial: optuna.Trial) -> float:
             return self.__optuna_objective(
-                trial,
-                x_train,
-                y_train,
-                x_valid,
-                y_valid,
-                self._constraints_type,
-                get_params_func,
+                trial=trial,
+                x_train=x_train,
+                x_valid=x_valid,
+                y_train=y_train,
+                y_valid=y_valid,
+                constraints_func=self._constraints_type,
+                get_params_func=get_params_func,
             )
 
         study = optuna.create_study(
@@ -182,13 +176,26 @@ class MQRegressor:
     def __optuna_objective(
         self,
         trial: optuna.Trial,
-        x_train: XdataLike,
-        y_train: YdataLike,
-        x_valid: XdataLike,
-        y_valid: YdataLike,
+        x_train: pd.DataFrame,
+        x_valid: pd.DataFrame,
+        y_train: np.ndarray,
+        y_valid: np.ndarray,
         constraints_func: Callable,
         get_params_func: Callable,
     ) -> float:
+        """
+        objective function for optuna
+        Args:
+            trial (optuna.Trial)
+            x_train (pd.DataFrame)
+            x_valid (pd.DataFrame)
+            y_train (np.ndarray)
+            y_valid (np.ndarray)
+            constraints_func (Callable)
+            get_params_func (Callable)
+        Returns:
+            float
+        """
         params = get_params_func(trial, self._model)
         params = set_monotone_constraints(
             params, x_train=x_train, constraints_fucs=constraints_func
@@ -202,19 +209,18 @@ class MQRegressor:
             )
             _gbm = lgb.train(**model_params)
             _preds = _gbm.predict(x_valid, num_iteration=_gbm.best_iteration)
-            _, loss = eval_loss(_preds, dvalid, self._alphas)
+            _, loss, _ = self._MQObjective.feval(y_pred=_preds, dtrain=dvalid)
         elif self.__is_xgb:
             model_params = dict(
                 params=params,
                 dtrain=self._train_dtype(x_train, label=y_train),
-                early_stopping_rounds=19,
                 evals=[
                     (self._train_dtype(x_valid, label=y_valid), MQStr.valid),
                 ],
             )
             _gbm = xgb.train(**model_params)
             _preds = _gbm.predict(self._predict_dtype(x_valid))
-            _, loss = eval_loss(_preds, dvalid, self._alphas)
+            _, loss = self._MQObjective.feval(y_pred=_preds, dtrain=dvalid)
         else:
             raise FittingException("model name is invalid")
         return loss

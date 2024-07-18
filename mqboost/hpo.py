@@ -1,3 +1,7 @@
+from typing import Tuple
+
+import numpy as np
+import pandas as pd
 from optuna import Trial
 from sklearn.model_selection import train_test_split
 
@@ -17,9 +21,6 @@ def get_params(trial: Trial, model: ModelName):
             "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
             "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
             "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
-            "early_stopping_rounds": trial.suggest_int(
-                "early_stopping_rounds", 100, 500
-            ),
         }
     elif model == ModelName.xgboost:
         params = {
@@ -35,8 +36,10 @@ def get_params(trial: Trial, model: ModelName):
     return params
 
 
-def train_valid_split(x_train, y_train):
+def train_valid_split(
+    x_train: pd.DataFrame, y_train: np.ndarray
+) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
     x_train, x_valid, y_train, y_valid = train_test_split(
-        x_train, y_train, test_size=0.2, random_state=42
+        x_train, y_train, test_size=0.2, random_state=42, stratify=x_train["_tau"]
     )
     return x_train, x_valid, y_train, y_valid
