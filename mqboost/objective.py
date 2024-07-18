@@ -2,11 +2,11 @@ from collections.abc import Callable
 from functools import partial
 from typing import Any, List, Tuple
 
-import lightgbm as lgb
 import numpy as np
-import xgboost as xgb
 
-_DtrainLike = lgb.basic.Dataset | xgb.DMatrix
+from mqboost.base import DtrainLike, ModelName, ObjectiveName
+from mqboost.utils import delta_validate
+
 CHECK_LOSS: str = "check_loss"
 
 
@@ -32,7 +32,7 @@ def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
 
 def _train_pred_reshape(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
+    dtrain: DtrainLike,
     len_alpha: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     _y_train: np.ndarray = dtrain.get_label()
@@ -41,8 +41,8 @@ def _train_pred_reshape(
 
 def _compute_grads_hess(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
-    alphas: list[float],
+    dtrain: DtrainLike,
+    alphas: List[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
     **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -51,7 +51,7 @@ def _compute_grads_hess(
     Args:
         y_train (np.ndarray)
         y_pred (np.ndarray)
-        alphas (list[float])
+        alphas (List[float])
         grad_fn (Callable[[np.ndarray, float, Any], np.ndarray])
         **kwargs (Any): Additional arguments for grad_fn
 
@@ -72,16 +72,16 @@ check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
 huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)
 
 
-def xgb_eval(
+def _eval(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
+    dtrain: DtrainLike,
     alphas: List[float],
 ) -> float:
     """
-    Compute gradients for given loss function
+    eval funcs
     Args:
-        y_train (np.ndarray)
         y_pred (np.ndarray)
+        d_train (DtrainLike)
         alphas (List[float])
         grad_fn (Callable)
         **kwargs (Any): Additional arguments for grad_fn
@@ -101,8 +101,41 @@ def xgb_eval(
 
 def lgb_eval(
     y_pred: np.ndarray,
-    dtrain: _DtrainLike,
+    dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[np.ndarray, np.ndarray]:
-    loss_str, loss = xgb_eval(y_pred, dtrain, alphas)
+    loss_str, loss = _eval(y_pred, dtrain, alphas)
     return loss_str, loss, False
+
+
+class MQObjective:
+    def __init__(
+        self,
+        alphas: List[float],
+        objective: ObjectiveName,
+        model: ModelName,
+        delta: float,
+    ) -> None:
+        if objective == ObjectiveName.huber:
+            delta_validate(delta)
+            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
+        else:
+            self._fobj = partial(check_loss_grad_hess, alphas=alphas)
+
+        self._eval_name = CHECK_LOSS
+        if model == ModelName.lightgbm:
+            self._feval = partial(lgb_eval, alphas=alphas)
+        else:
+            self._feval = partial(_eval, alphas=alphas)
+
+    @property
+    def fobj(self) -> Callable:
+        return self._fobj
+
+    @property
+    def feval(self) -> Callable:
+        return self._feval
+
+    @property
+    def eval_name(self) -> str:
+        return self._eval_name
