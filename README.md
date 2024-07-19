@@ -31,44 +31,42 @@ pip install mqboost
 ## Parameters
 ```python
 #--------------------------------------------------------------------------------------------#
-# init
-x                 # Explanatory data (e.g., pd.DataFrame)
-                  # Column named '_tau' must not be included
-y                 # Response data (e.g., np.ndarray)
-alphas            # Target quantiles
-                  # Must be in ascending order and contain no duplicates
-objective         # [Optional] Objective to minimize, "check" (default) or "huber"
-model             # [Optional] Boosting algorithm to use, "lightgbm" (default) or "xgboost"
-delta             # [Optional] Parameter for "huber" objective;
-                  # Used only when objective == "huber"
-                  # Must be smaller than 0.1
+>> MQBoost.__init__
+x                   # Explanatory data (e.g., pd.DataFrame).
+                    # Column named '_tau' must not be included.
+y                   # Response data (e.g., np.ndarray).
+alphas              # Target quantiles.
+                    # Must be in ascending order and contain no duplicates.
+objective           # [Optional] Objective to minimize, "check" (default) or "huber".
+model               # [Optional] Boosting algorithm to use, "lightgbm" (default) or "xgboost".
+delta               # [Optional] Parameter for "huber" objective.
+                    # Used only when objective == "huber".
+                    # Must be smaller than 0.1.
 #--------------------------------------------------------------------------------------------#
-# train           # train quantile model
-                  #  Any params related to model can be used except "objective"
-
-params            # [Optional] Model parameters; defaults to None.
-                  # If None, hyperparameter optimization is executed.
-n_trials          # [Optional] Number of hyperparameter optimization trials
+>> MQBoost.train
+params              # [Optional] Model parameters; defaults to None.
+                    # Any params related to model can be used except "objective".
+                    # If None, hyperparameter optimization is executed.
+n_trials            # [Optional] Number of hyperparameter optimization trials.
+                    # Defaults to 20.
 #--------------------------------------------------------------------------------------------#
-# predict         # predict with input data
-
-x                 # Explanatory data (e.g., pd.DataFrame)
-alphas            # Target quantiles for prediction
+>> MQBoost.predict
+x                   # Explanatory data (e.g., pd.DataFrame).
+alphas              # [Optional] Target quantiles for prediction.
+                    # Defaults to alphas used in train.
 #--------------------------------------------------------------------------------------------#
-# optimize_params
-
-n_trials          # Number of hyperparameter optimization trials
-get_params_func   # Manual hyperparameter function
+>> MQBoost.optimize_params
+n_trials            # Number of hyperparameter optimization trials
+get_params_func     # [Optional] Manual hyperparameter function
+valid_dict          # [Optional] Manually selected validation sets
+                    # Keys must contain "data" and "label"
 #--------------------------------------------------------------------------------------------#
 ```
-
-
 
 ## Example
 ```python
 import numpy as np
 from optuna import Trial
-
 from mqboost import MQRegressor
 
 # Generate sample data
@@ -91,7 +89,7 @@ delta = 0.01  # Set when objective is "huber", default is 0.05
 # Initialize the LightGBM-based quantile regressor
 mq_lgb = MQRegressor(
     x=x,
-    y=y_test,
+    y=y,
     alphas=alphas,
     objective=objective,
     model=model,
@@ -110,11 +108,12 @@ mq_lgb.train(params=lgb_params)
 # Train the model with Optuna hyperparameter optimization
 mq_lgb.train(n_trials=10)
 
-# Alternatively, you can optimize parameters first and then train
+# Alternatively, optimize parameters first and then train
 best_params = mq_lgb.optimize_params(n_trials=10)
 mq_lgb.train(params=best_params)
 
-# Moreover, you have the option to optimize parameters by implementing functions manually
+# Moreover, you can optimize parameters by implementing functions manually
+# Also, you can manually set the validation set
 def get_params(trial: Trial, model: str):
     return {
         "verbose": -1,
@@ -128,7 +127,14 @@ def get_params(trial: Trial, model: str):
         "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
     }
 
-best_params = mq_lgb.optimize_params(n_trials=10, get_params_func=get_params)
+valid_dict = {
+    "data": x_test,
+    "label": y_test,
+}
+
+best_params = mq_lgb.optimize_params(
+    n_trials=10, get_params_func=get_params, valid_dict=valid_dict
+)
 mq_lgb.train(params=best_params)
 
 # Predict using the trained model
