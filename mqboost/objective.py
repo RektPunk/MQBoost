@@ -93,10 +93,12 @@ def eval_loss(
         y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
     )
     loss: float = 0.0
-    for alpha_inx in range(len(alphas)):
+    for alpha_inx in range(_len_alpha):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
         _loss = _rho(u=_err_for_alpha, alpha=alphas[alpha_inx])
-        loss += np.sum(_loss)
+        loss = loss + np.mean(_loss)
+
+    loss = loss / _len_alpha
     return CHECK_LOSS, loss
 
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import lightgbm as lgb
 import numpy as np
@@ -14,6 +14,7 @@ from mqboost.base import (
     MQStr,
     ObjectiveName,
     TypeName,
+    ValidationException,
     XdataLike,
     YdataLike,
 )
@@ -121,18 +122,22 @@ class MQRegressor:
     def predict(
         self,
         x: XdataLike,
-        alphas: AlphaLike,
+        alphas: Optional[AlphaLike] = None,
     ) -> np.ndarray:
         """
         Return predicted quantiles
         Args:
             x (XdataLike)
-            alphas (AlphaLike)
+            alphas (Optional[AlphaLike], optional). Defaults to None.
+
         Returns:
             np.ndarray
         """
         self.__is_fitted
-        alphas = alpha_validate(alphas=alphas)
+        if alphas is None:
+            alphas = self._alphas
+        else:
+            alphas = alpha_validate(alphas=alphas)
         _x = prepare_x(x=x, alphas=alphas)
         _x = self._predict_dtype(_x)
         _pred = self.model.predict(data=_x)
@@ -143,6 +148,7 @@ class MQRegressor:
         self,
         n_trials: int,
         get_params_func: Callable = get_params,
+        valid_dict: Optional[Dict[str, XdataLike]] = None,
     ) -> Dict[str, Any]:
         """
         Optimize hyperparameter
@@ -162,12 +168,33 @@ class MQRegressor:
                             "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
                             "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
                         }
+            valid_dict (Dict):
+                Manually selected validation set. Keys must contain "data" and "label".
+                For example,
+                    valid_dict = {
+                        "data": ...,
+                        "label": ...,
+                    }
         Returns:
             Dict[str, Any]: best params
         """
-        x_train, x_valid, y_train, y_valid = train_valid_split(
-            x_train=self.x_train, y_train=self.y_train
-        )
+        if valid_dict is None:
+            x_train, x_valid, y_train, y_valid = train_valid_split(
+                x_train=self.x_train, y_train=self.y_train
+            )
+        else:
+            _valid_dict_keys: List[str] = ["data", "label"]
+            if any([_ not in valid_dict.keys() for _ in _valid_dict_keys]):
+                raise ValidationException(
+                    "Key of valid_dict must contains 'data' and 'label'"
+                )
+            x_train = self.x_train
+            y_train = self.y_train
+            _x_valid = valid_dict.get("data")
+            _y_valid = valid_dict.get("label")
+            x_valid, y_valid = prepare_train(
+                x=_x_valid, y=_y_valid, alphas=self._alphas
+            )
 
         def _study_func(trial: optuna.Trial) -> float:
             return self.__optuna_objective(
