@@ -285,4 +285,4 @@ class MQRegressor:
 
     @property
     def study(self) -> optuna.Study:
-        return getattr(self, "study", None)
+        return getattr(self, "_study", None)
