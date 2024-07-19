@@ -5,9 +5,6 @@
   <a href="https://github.com/RektPunk/MQBoost/releases/latest">
     <img alt="release" src="https://img.shields.io/github/v/release/RektPunk/mqboost.svg">
   </a>
-  <a href="https://pypi.python.org/pypi/mqboost/">
-    <img alt="PyPI" src="https://badge.fury.io/py/mqboost.svg">
-  </a>
 <!--   <a href="LICENSE">
     <img alt="license" src="https://img.shields.io/badge/license-MIT-indigo.sv">
   </a> -->
