@@ -74,7 +74,7 @@ class MQRegressor:
         )
         self.x_train, self.y_train = prepare_train(x=x, y=y, alphas=self._alphas)
         self.dataset = self._train_dtype(data=self.x_train, label=self.y_train)
-        
+
     def train(
         self,
         params: Optional[Dict[str, Any]] = None,
@@ -282,7 +282,7 @@ class MQRegressor:
     def __is_fitted(self) -> None:
         if not getattr(self, "_fitted", False):
             raise FittingException("train must be executed before predict")
-    
+
     @property
     def study(self) -> optuna.Study:
         return self._study
