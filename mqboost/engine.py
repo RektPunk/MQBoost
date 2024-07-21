@@ -271,6 +271,10 @@ class MQRegressor:
         return self._MQObj
 
     @property
+    def study(self) -> optuna.Study:
+        return getattr(self, "_study", None)
+
+    @property
     def __is_lgb(self) -> bool:
         return self._model == ModelName.lightgbm
 
@@ -282,7 +286,3 @@ class MQRegressor:
     def __is_fitted(self) -> None:
         if not getattr(self, "_fitted", False):
             raise FittingException("train must be executed before predict")
-
-    @property
-    def study(self) -> optuna.Study:
-        return getattr(self, "_study", None)
