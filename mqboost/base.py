@@ -1,6 +1,5 @@
-from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Dict, List, Union
+from enum import StrEnum
+from typing import Callable, Dict, List, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -8,47 +7,46 @@ import pandas as pd
 import xgboost as xgb
 
 
-# Name
-class BaseName:
-    def get(self, name):
-        if name in self.__annotations__:
-            return getattr(self, name)
-        else:
-            available_attributes = list(self.__annotations__.keys())
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'. "
-                f"Available attributes are: {', '.join(available_attributes)}"
+class BaseEnum(StrEnum):
+    @classmethod
+    def get(cls, text: str) -> "BaseEnum":
+        cls._isin(text)
+        return cls[text]
+
+    @classmethod
+    def _isin(cls, text: str) -> None:
+        if text not in cls._member_names_:
+            valid_members = ", ".join(cls._member_names_)
+            raise ValueError(
+                f"Invalid value: '{text}'. Expected one of: {valid_members}."
             )
 
 
-@dataclass
-class ModelName(BaseName):
+# Name
+class ModelName(BaseEnum):
     lightgbm: str = "lightgbm"
     xgboost: str = "xgboost"
 
 
-@dataclass
-class ObjectiveName(BaseName):
+class ObjectiveName(BaseEnum):
     check: str = "check"
     huber: str = "huber"
 
 
-@dataclass
-class TypeName(BaseName):
+class TypeName(BaseEnum):
     train_dtype: str = "train_dtype"
     predict_dtype: str = "predict_dtype"
     constraints_type: str = "constraints_type"
 
 
-@dataclass
-class MQStr(BaseName):
+class MQStr(BaseEnum):
     mono: str = "monotone_constraints"
     obj: str = "objective"
     valid: str = "valid"
 
 
 # Functions
-FUNC_TYPE: Dict[str, Dict[str, Callable]] = {
+FUNC_TYPE: Dict[ModelName, Dict[TypeName, Callable]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
         TypeName.predict_dtype: lambda x: x,

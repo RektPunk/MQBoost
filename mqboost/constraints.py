@@ -19,19 +19,19 @@ def set_monotone_constraints(
     Returns:
         Dict[str, Any]
     """
-    if MQStr.obj in params:
+    if MQStr.obj.value in params:
         raise ValidationException(
             "The parameter named 'objective' must be excluded in params"
         )
     _params = params.copy()
-    if MQStr.mono in _params:
-        _monotone_constraints = list(_params[MQStr.mono])
+    if MQStr.mono.value in _params:
+        _monotone_constraints = list(_params[MQStr.mono.value])
         _monotone_constraints.append(1)
         _params[MQStr.mono] = constraints_fucs(_monotone_constraints)
     else:
         _params.update(
             {
-                MQStr.mono: constraints_fucs(
+                MQStr.mono.value: constraints_fucs(
                     [1 if "_tau" == col else 0 for col in x_train.columns]
                 )
             }
