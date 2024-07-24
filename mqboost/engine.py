@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -8,15 +8,12 @@ import xgboost as xgb
 
 from mqboost.base import (
     FUNC_TYPE,
-    AlphaLike,
     FittingException,
     ModelName,
     MQStr,
     ObjectiveName,
     TypeName,
     ValidationException,
-    XdataLike,
-    YdataLike,
 )
 from mqboost.constraints import set_monotone_constraints
 from mqboost.hpo import get_params, train_valid_split
@@ -31,15 +28,15 @@ class MQRegressor:
     Monotone quantile regressor which preserving monotonicity among quantiles
     Attributes
     ----------
-    x: XdataLike
-    y: YdataLike
-    alphas: AlphaLike
+    x: Union[pd.DataFrame, pd.Series, np.ndarray]
+    y: Union[pd.Series, np.ndarray]
+    alphas: Union[List[float], float]
         It must be in ascending order and not contain duplicates.
-    objective: str
+    objective: str, optional
         Determine objective function. Defaults to "check", another option is "huber".
-    model: str
+    model: str, optioal
         Determine base model. Defaults to "lightgbm", another option is "xgboost".
-    delta (float, optional).
+    delta: float, optional
         Only used with "huber" objective.
         Defaults to 0.05 and must be smaller than 0.1.
 
@@ -52,17 +49,17 @@ class MQRegressor:
 
     def __init__(
         self,
-        x: XdataLike,
-        y: YdataLike,
-        alphas: AlphaLike,
-        model: str = ModelName.lightgbm,
-        objective: str = ObjectiveName.check,
+        x: Union[pd.DataFrame, pd.Series, np.ndarray],
+        y: Union[pd.Series, np.ndarray],
+        alphas: Union[List[float], float],
+        model: str = ModelName.lightgbm.value,
+        objective: str = ObjectiveName.check.value,
         delta: float = 0.05,
     ) -> None:
         self._alphas = alpha_validate(alphas)
-        self._model = ModelName().get(model)
-        self._objective = ObjectiveName().get(objective)
-        _funcs = FUNC_TYPE.get(model)
+        self._model = ModelName.get(model)
+        self._objective = ObjectiveName.get(objective)
+        _funcs = FUNC_TYPE.get(self._model)
         self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
         self._constraints_type: Callable = _funcs.get(TypeName.constraints_type)
@@ -121,14 +118,14 @@ class MQRegressor:
 
     def predict(
         self,
-        x: XdataLike,
-        alphas: Optional[AlphaLike] = None,
+        x: Union[pd.DataFrame, pd.Series, np.ndarray],
+        alphas: Optional[Union[List[float], float]] = None,
     ) -> np.ndarray:
         """
         Return predicted quantiles
         Args:
-            x (XdataLike)
-            alphas (Optional[AlphaLike], optional). Defaults to None.
+            x (Union[pd.DataFrame, pd.Series, np.ndarray])
+            alphas (Optional[Union[List[float], float]], optional). Defaults to None.
 
         Returns:
             np.ndarray
@@ -148,7 +145,9 @@ class MQRegressor:
         self,
         n_trials: int,
         get_params_func: Callable = get_params,
-        valid_dict: Optional[Dict[str, XdataLike]] = None,
+        valid_dict: Optional[
+            Dict[str, Union[pd.DataFrame, pd.Series, np.ndarray]]
+        ] = None,
     ) -> Dict[str, Any]:
         """
         Optimize hyperparameter
