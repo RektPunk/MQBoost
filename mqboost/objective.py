@@ -106,7 +106,7 @@ def _xgb_eval_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
-) -> Tuple[str, np.ndarray, bool]:
+) -> Tuple[str, float]:
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss
 
@@ -115,7 +115,7 @@ def _lgb_eval_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
-) -> Tuple[str, np.ndarray, bool]:
+) -> Tuple[str, float, bool]:
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss, False
 
