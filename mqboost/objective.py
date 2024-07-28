@@ -74,11 +74,11 @@ check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
 huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)
 
 
-def eval_loss(
+def _eval_check_loss(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
     alphas: List[float],
-) -> Tuple[str, float]:
+) -> float:
     """
     eval funcs
     Args:
@@ -86,7 +86,7 @@ def eval_loss(
         d_train (DtrainLike)
         alphas (List[float])
     Returns:
-        Tuple[str, float]
+        float
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(
@@ -99,6 +99,15 @@ def eval_loss(
         loss = loss + np.mean(_loss)
 
     loss = loss / _len_alpha
+    return loss
+
+
+def _xgb_eval_loss(
+    y_pred: np.ndarray,
+    dtrain: DtrainLike,
+    alphas: List[float],
+) -> Tuple[str, np.ndarray, bool]:
+    loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss
 
 
@@ -107,8 +116,8 @@ def _lgb_eval_loss(
     dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[str, np.ndarray, bool]:
-    loss_str, loss = eval_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
-    return loss_str, loss, False
+    loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
+    return CHECK_LOSS, loss, False
 
 
 class MQObjective:
@@ -145,7 +154,7 @@ class MQObjective:
         if model == ModelName.lightgbm:
             self._feval = partial(_lgb_eval_loss, alphas=alphas)
         elif model == ModelName.xgboost:
-            self._feval = partial(eval_loss, alphas=alphas)
+            self._feval = partial(_xgb_eval_loss, alphas=alphas)
 
     @property
     def fobj(self) -> Callable:
