@@ -61,4 +61,4 @@ valid_dict          # [Optional] Manually selected validation sets
 ```
 
 ## Example
-See [**Examples**](https://github.com/RektPunk/MQBoost/tree/main/examples)
+Please refer to the [**Examples**](https://github.com/RektPunk/MQBoost/tree/main/examples) provided for further clarification. 
