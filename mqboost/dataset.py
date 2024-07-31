@@ -1,10 +1,18 @@
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 
-from mqboost.base import FUNC_TYPE, ModelName, TypeName, XdataLike, YdataLike, AlphaLike
-from mqboost.utils import prepare_x, prepare_y
+from mqboost.base import (
+    FUNC_TYPE,
+    AlphaLike,
+    DtrainLike,
+    FittingException,
+    ModelName,
+    TypeName,
+    XdataLike,
+    YdataLike,
+)
+from mqboost.utils import alpha_validate, prepare_x, prepare_y
 
 
 class MQDataset:
@@ -17,38 +25,44 @@ class MQDataset:
     ) -> None:
         self._model = ModelName.get(model)
         self._nrow = len(data)
+        self._alphas = alpha_validate(alphas)
 
         _funcs = FUNC_TYPE.get(self._model)
-        _train_dtype: Callable = _funcs.get(TypeName.train_dtype)
-        _predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
+        self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
+        self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
 
-        _data = prepare_x(x=data, alphas=alphas)
-        self._columns: pd.Index[str] = self._data.columns
+        self._data = prepare_x(x=data, alphas=self._alphas)
+        self._columns = self._data.columns
 
-        if label is None:
-            self._train = None
-            self._predict = _predict_dtype(data=_data)
-        else:
+        if label is not None:
             self._label = prepare_y(y=label, alphas=self._alphas)
-            self._train = _train_dtype(data=self._data, label=self._label)
-            self._predict = _predict_dtype(data=self._data, label=self._label)
+            self._is_none_label = False
 
     @property
-    def model(self):
+    def model(self) -> ModelName:
         return self._model
 
     @property
-    def columns(self):
+    def columns(self) -> pd.Index:
         return self._columns
 
     @property
-    def nrow(self):
+    def nrow(self) -> int:
         return self._nrow
 
     @property
-    def train(self):
-        return self._train
+    def train(self) -> DtrainLike:
+        self.__fit_available()
+        return self._train_dtype(data=self._data, label=self._label)
 
     @property
-    def predict(self):
-        return self._predict
+    def predict(self) -> Union[DtrainLike, Callable]:
+        return self._predict_dtype(data=self._data)
+
+    @property
+    def alphas(self) -> List[float]:
+        return self._alphas
+
+    def __fit_available(self) -> None:
+        if getattr(self, "_is_none_label", True):
+            raise FittingException("Fitting is impossible since label is None")
