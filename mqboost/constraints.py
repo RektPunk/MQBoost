@@ -1,23 +1,24 @@
 from typing import Any, Dict
 
+import pandas as pd
+
 from mqboost.base import (
     FUNC_TYPE,
     ModelName,
     MQStr,
     TypeName,
     ValidationException,
-    XdataLike,
 )
 
 
 def set_monotone_constraints(
-    params: Dict[str, Any], x_train: XdataLike, model_name: ModelName
+    params: Dict[str, Any], columns: pd.Index[str], model_name: ModelName
 ) -> Dict[str, Any]:
     """
     Set monotone constraints in params
     Args:
         params (Dict[str, Any])
-        x_train (XdataLike)
+        columns (pd.Index[[str]])
         model_name (ModelName)
 
     Raises:
@@ -40,7 +41,7 @@ def set_monotone_constraints(
         _params.update(
             {
                 MQStr.mono.value: constraints_fucs(
-                    [1 if "_tau" == col else 0 for col in x_train.columns]
+                    [1 if "_tau" == col else 0 for col in columns]
                 )
             }
         )
