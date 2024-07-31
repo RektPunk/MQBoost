@@ -18,7 +18,7 @@ from mqboost.base import (
 from mqboost.constraints import set_monotone_constraints
 from mqboost.hpo import get_params, train_valid_split
 from mqboost.objective import MQObjective
-from mqboost.utils import alpha_validate, prepare_train, prepare_x
+from mqboost.utils import alpha_validate, prepare_x, prepare_y
 
 __all__ = ["MQRegressor"]
 
@@ -63,14 +63,14 @@ class MQRegressor:
         _funcs = FUNC_TYPE.get(self._model)
         self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
-        self._constraints_type: Callable = _funcs.get(TypeName.constraints_type)
         self._MQObj = MQObjective(
             alphas=self._alphas,
             objective=self._objective,
             model=self._model,
             delta=delta,
         )
-        self.x_train, self.y_train = prepare_train(x=x, y=y, alphas=self._alphas)
+        self.x_train = prepare_x(x=x, alphas=self._alphas)
+        self.y_train = prepare_y(y=y, alphas=self._alphas)
         self.dataset = self._train_dtype(data=self.x_train, label=self.y_train)
 
     def train(
@@ -192,9 +192,8 @@ class MQRegressor:
             y_train = self.y_train
             _x_valid = valid_dict.get("data")
             _y_valid = valid_dict.get("label")
-            x_valid, y_valid = prepare_train(
-                x=_x_valid, y=_y_valid, alphas=self._alphas
-            )
+            x_valid = prepare_x(x=_x_valid, alphas=self._alphas)
+            y_valid = prepare_y(y=_y_valid, alphas=self._alphas)
 
         def _study_func(trial: optuna.Trial) -> float:
             return self.__optuna_objective(

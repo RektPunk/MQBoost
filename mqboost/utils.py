@@ -65,24 +65,20 @@ def prepare_x(
     return _repeated_x
 
 
-def prepare_train(
-    x: XdataLike,
+def prepare_y(
     y: YdataLike,
     alphas: List[float],
-) -> Tuple[pd.DataFrame, np.ndarray]:
+) -> np.ndarray:
     """
-    Return stacked X, y for training
+    Return stacked y
     Args:
-        x (XdataLike)
         y (YdataLike)
         alphas (List[float])
 
     Returns:
-        Tuple[pd.DataFrame, np.ndarray]
+        np.ndarray
     """
-    _train_df = prepare_x(x=x, alphas=alphas)
-    _repeated_y = np.concatenate(list(repeat(y, len(alphas))))
-    return (_train_df, _repeated_y)
+    return np.concatenate(list(repeat(y, len(alphas))))
 
 
 def delta_validate(delta: float) -> None:

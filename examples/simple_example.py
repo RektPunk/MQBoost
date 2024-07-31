@@ -1,5 +1,6 @@
 import numpy as np
 from optuna import Trial
+
 from mqboost import MQRegressor
 
 # Generate sample data

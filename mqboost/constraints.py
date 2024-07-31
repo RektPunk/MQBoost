@@ -1,12 +1,12 @@
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
 from mqboost.base import (
+    FUNC_TYPE,
+    ModelName,
     MQStr,
+    TypeName,
     ValidationException,
     XdataLike,
-    ModelName,
-    TypeName,
-    FUNC_TYPE,
 )
 
 
@@ -35,7 +35,7 @@ def set_monotone_constraints(
     if MQStr.mono.value in _params:
         _monotone_constraints = list(_params[MQStr.mono.value])
         _monotone_constraints.append(1)
-        _params[MQStr.mono] = constraints_fucs(_monotone_constraints)
+        _params.update({MQStr.mono.value: constraints_fucs(_monotone_constraints)})
     else:
         _params.update(
             {
