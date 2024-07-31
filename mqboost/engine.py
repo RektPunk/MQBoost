@@ -56,9 +56,10 @@ class MQRegressor:
         objective: str = ObjectiveName.check.value,
         delta: float = 0.05,
     ) -> None:
-        self._alphas = alpha_validate(alphas)
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)
+        self._alphas = alpha_validate(alphas)
+
         _funcs = FUNC_TYPE.get(self._model)
         self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
@@ -92,7 +93,7 @@ class MQRegressor:
         self._params = set_monotone_constraints(
             params=params,
             x_train=self.x_train,
-            constraints_fucs=self._constraints_type,
+            model_name=self._model,
         )
 
         if self.__is_lgb:
@@ -202,7 +203,6 @@ class MQRegressor:
                 x_valid=x_valid,
                 y_train=y_train,
                 y_valid=y_valid,
-                constraints_func=self._constraints_type,
                 get_params_func=get_params_func,
             )
 
@@ -221,7 +221,6 @@ class MQRegressor:
         x_valid: pd.DataFrame,
         y_train: np.ndarray,
         y_valid: np.ndarray,
-        constraints_func: Callable,
         get_params_func: Callable,
     ) -> float:
         """
@@ -239,7 +238,9 @@ class MQRegressor:
         """
         params = get_params_func(trial, self._model)
         params = set_monotone_constraints(
-            params, x_train=x_train, constraints_fucs=constraints_func
+            params,
+            x_train=x_train,
+            model_name=self._model,
         )
         dtrain = self._train_dtype(data=x_train, label=y_train)
         dvalid = self._train_dtype(data=x_valid, label=y_valid)

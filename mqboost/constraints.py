@@ -1,17 +1,24 @@
 from typing import Any, Callable, Dict
 
-from mqboost.base import MQStr, ValidationException, XdataLike
+from mqboost.base import (
+    MQStr,
+    ValidationException,
+    XdataLike,
+    ModelName,
+    TypeName,
+    FUNC_TYPE,
+)
 
 
 def set_monotone_constraints(
-    params: Dict[str, Any], x_train: XdataLike, constraints_fucs: Callable
+    params: Dict[str, Any], x_train: XdataLike, model_name: ModelName
 ) -> Dict[str, Any]:
     """
     Set monotone constraints in params
     Args:
         params (Dict[str, Any])
         x_train (XdataLike)
-        constraints_fucs (Callable)
+        model_name (ModelName)
 
     Raises:
         ValidationException: when "objective" is in params.keys()
@@ -19,6 +26,7 @@ def set_monotone_constraints(
     Returns:
         Dict[str, Any]
     """
+    constraints_fucs = FUNC_TYPE.get(model_name).get(TypeName.constraints_type)
     if MQStr.obj.value in params:
         raise ValidationException(
             "The parameter named 'objective' must be excluded in params"
