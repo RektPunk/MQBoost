@@ -57,9 +57,9 @@ class MQRegressor:
                 Defaults to None. If None, dataset input is used.
         """
         if eval_set is None:
-            _eval_set = dataset.train
+            _eval_set = dataset.dtrain
         else:
-            _eval_set = eval_set.train
+            _eval_set = eval_set.dtrain
 
         params = set_monotone_constraints(
             params=self._params,
@@ -73,16 +73,16 @@ class MQRegressor:
             delta=self._delta,
         )
         if self.__is_lgb:
-            params.update({MQStr.obj: self._MQObj.fobj})
+            params.update({MQStr.obj.value: self._MQObj.fobj})
             self.model = lgb.train(
-                train_set=dataset.train,
+                train_set=dataset.dtrain,
                 params=params,
                 feval=self._MQObj.feval,
                 valid_sets=[_eval_set],
             )
         elif self.__is_xgb:
             self.model = xgb.train(
-                dtrain=dataset.train,
+                dtrain=dataset.dtrain,
                 verbose_eval=False,
                 params=params,
                 obj=self._MQObj.fobj,
@@ -103,7 +103,7 @@ class MQRegressor:
             np.ndarray
         """
         self.__predict_available()
-        _pred = self.model.predict(data=dataset.predict)
+        _pred = self.model.predict(data=dataset.dpredict)
         _pred = _pred.reshape(len(dataset.alphas), dataset.nrow)
         return _pred
 

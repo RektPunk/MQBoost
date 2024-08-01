@@ -1,6 +1,5 @@
-from collections.abc import Callable
 from functools import partial
-from typing import Any, List, Tuple
+from typing import Any, Callable, List, Tuple
 
 import numpy as np
 
@@ -145,8 +144,8 @@ class MQObjective:
         delta: float,
     ) -> None:
         if objective == ObjectiveName.huber:
-            delta_validate(delta=delta)
-            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
+            self._delta = delta_validate(delta=delta)
+            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=self._delta)
         elif objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
 
@@ -167,3 +166,7 @@ class MQObjective:
     @property
     def eval_name(self) -> str:
         return self._eval_name
+
+    @property
+    def delta(self) -> float:
+        return self._delta

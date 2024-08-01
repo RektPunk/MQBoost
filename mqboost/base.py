@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from typing import Callable, Dict, List, Union
 
 import lightgbm as lgb
@@ -7,7 +7,7 @@ import pandas as pd
 import xgboost as xgb
 
 
-class BaseEnum(StrEnum):
+class BaseEnum(Enum):
     @classmethod
     def get(cls, text: str) -> "BaseEnum":
         cls._isin(text)

@@ -1,5 +1,5 @@
 from itertools import chain, repeat
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -81,7 +81,7 @@ def prepare_y(
     return np.concatenate(list(repeat(y, len(alphas))))
 
 
-def delta_validate(delta: float) -> None:
+def delta_validate(delta: float) -> float:
     _delta_upper_bound: float = 0.1
 
     if not isinstance(delta, float):
@@ -89,3 +89,5 @@ def delta_validate(delta: float) -> None:
 
     if delta > _delta_upper_bound:
         raise ValidationException("Delta must be smaller than 0.1")
+
+    return delta

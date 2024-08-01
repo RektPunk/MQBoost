@@ -1,5 +1,4 @@
 import numpy as np
-from optuna import Trial
 
 from mqboost import MQDataset, MQRegressor
 
@@ -41,5 +40,5 @@ train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
 mq_regressor.fit(dataset=train_dataset)
 
 # Predict using the fitted model
-predict_dataset = MQDataset(data=x_test, alphas=alphas, model=model)
-preds_lgb = mq_regressor.predict(predict_dataset)
+test_dataset = MQDataset(data=x_test, alphas=alphas, model=model)
+preds_lgb = mq_regressor.predict(test_dataset)

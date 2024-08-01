@@ -39,6 +39,14 @@ class MQDataset:
             self._is_none_label = False
 
     @property
+    def train_dtype(self) -> Callable:
+        return self._train_dtype
+
+    @property
+    def predict_dtype(self) -> Callable:
+        return self._predict_dtype
+
+    @property
     def model(self) -> ModelName:
         return self._model
 
@@ -51,18 +59,27 @@ class MQDataset:
         return self._nrow
 
     @property
-    def train(self) -> DtrainLike:
-        self.__fit_available()
+    def data(self) -> pd.DataFrame:
+        return self._data
+
+    @property
+    def label(self) -> pd.DataFrame:
+        self.__label_available()
+        return self._label
+
+    @property
+    def dtrain(self) -> DtrainLike:
+        self.__label_available()
         return self._train_dtype(data=self._data, label=self._label)
 
     @property
-    def predict(self) -> Union[DtrainLike, Callable]:
+    def dpredict(self) -> Union[DtrainLike, Callable]:
         return self._predict_dtype(data=self._data)
 
     @property
     def alphas(self) -> List[float]:
         return self._alphas
 
-    def __fit_available(self) -> None:
+    def __label_available(self) -> None:
         if getattr(self, "_is_none_label", True):
             raise FittingException("Fitting is impossible since label is None")
