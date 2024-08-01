@@ -14,22 +14,25 @@ __all__ = ["MQRegressor"]
 
 class MQRegressor:
     """
-    Monotone quantile regressor which preserving monotonicity among quantiles
-    Attributes
-    ----------
-    params: Dict[str, Any]
-        Train parameter.
-    model: str, optioal
-        Determine base model. Defaults to "lightgbm", another option is "xgboost".
-    objective: str, optional
-        Determine objective function. Defaults to "check", another option is "huber".
-    delta: float, optional
-        Only used with "huber" objective.
-        Defaults to 0.05 and must be smaller than 0.1.
-    Methods
-    ----------
-    fit
-    predict
+    MQRegressor is a custom multiple quantile estimator that supports LightGBM and XGBoost models with
+    preserving monotonicity among quantiles.
+
+    Attributes:
+        params (Dict[str, Any]): Parameters for the model.
+        model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
+        objective (str): The objective function (either 'check' or 'huber'). Default is 'check'.
+        delta (float):
+            Parameter for the 'huber' objective function.
+            Default is 0.05 and must be smaller than 0.1.
+
+    Methods:
+        fit(dataset, eval_set):
+            Fits the regressor to the provided dataset, optionally evaluating on a separate validation set.
+        predict(dataset):
+            Predicts quantiles for the given dataset.
+
+    Property:
+        MQObj: Returns the MQObjective instance.
     """
 
     def __init__(
@@ -39,6 +42,7 @@ class MQRegressor:
         objective: str = ObjectiveName.check.value,
         delta: float = 0.05,
     ) -> None:
+        """Initialize the MQRegressor."""
         self._params = params
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)
@@ -50,11 +54,11 @@ class MQRegressor:
         eval_set: Optional[MQDataset] = None,
     ) -> None:
         """
-        Fit regressor
+        Fit the regressor to the dataset.
         Args:
-            dataset (MQDataset)
-            eval_set (MQDataset, optional)
-                Defaults to None. If None, dataset input is used.
+            dataset (MQDataset): The dataset to fit the model on.
+            eval_set (Optional[MQDataset]):
+                The validation dataset. If None, the dataset is used for evaluation.
         """
         if eval_set is None:
             _eval_set = dataset.dtrain
@@ -96,11 +100,11 @@ class MQRegressor:
         dataset: MQDataset,
     ) -> np.ndarray:
         """
-        Return predicted quantiles
+        Predict quantiles for the dataset.
         Args:
-            dataset (MQDataset)
+            dataset (MQDataset): The dataset to make predictions on.
         Returns:
-            np.ndarray
+            np.ndarray: The predicted quantiles.
         """
         self.__predict_available()
         _pred = self.model.predict(data=dataset.dpredict)
@@ -108,17 +112,29 @@ class MQRegressor:
         return _pred
 
     def __predict_available(self) -> None:
+        """
+        Check if the model has been fitted before making predictions.
+        Raises:
+            FittingException: If the model has not been fitted.
+        """
         if not getattr(self, "_fitted", False):
-            raise FittingException("train must be executed before predict")
+            raise FittingException("Fit must be executed before predict")
 
     @property
     def MQObj(self) -> MQObjective:
+        """
+        Get the MQObjective instance.
+        Returns:
+            MQObjective: The MQObjective instance.
+        """
         return self._MQObj
 
     @property
     def __is_lgb(self) -> bool:
+        """Check if the model is LightGBM."""
         return self._model == ModelName.lightgbm
 
     @property
     def __is_xgb(self) -> bool:
+        """Check if the model is XGBoost."""
         return self._model == ModelName.xgboost

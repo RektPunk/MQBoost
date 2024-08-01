@@ -14,7 +14,6 @@ from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
 from mqboost.utils import delta_validate
 
-
 __all__ = ["MQOptimizer"]
 
 
@@ -49,7 +48,7 @@ _GET_PARAMS_FUNC = {
 }
 
 
-def train_valid_split(
+def _train_valid_split(
     x_train: pd.DataFrame, y_train: np.ndarray
 ) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
     return train_test_split(
@@ -58,12 +57,32 @@ def train_valid_split(
 
 
 class MQOptimizer:
+    """
+    MQOptimizer is designed to optimize hyperparameters for MQRegressor with Optuna.
+
+    Attributes:
+        model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
+        objective (str): The objective function for the quantile regression (either 'check' or 'huber'). Default is 'check'.
+        delta (float): Delta parameter for the 'huber' objective function. Default is 0.05.
+        get_params (Callable): Function to get hyperparameters for the model.
+
+    Methods:
+        optimize_params(dataset, n_trials, get_params_func, valid_set):
+            Optimizes the hyperparameters for the specified dataset using Optuna.
+
+    Property
+        MQObj: Returns the MQObjective instance.
+        study: Returns the Optuna study instance.
+        best_params: Returns the best hyperparameters found by the optimization process.
+    """
+
     def __init__(
         self,
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.05,
     ) -> None:
+        """Initialize the MQOptimizer."""
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)
         self._delta = delta_validate(delta)
@@ -77,12 +96,11 @@ class MQOptimizer:
         valid_set: Optional[MQDataset] = None,
     ) -> Dict[str, Any]:
         """
-        Optimize hyperparameter
+        Optimize hyperparameters.
         Args:
-            dataset (MQDataset)
+            dataset (MQDataset): The dataset to be used for optimization.
             n_trials (int): The number of trials for the hyperparameter optimization.
-            get_params_func (Callable, optional):
-                A function to get the parameters for the model.
+            get_params_func (Callable, optional): A custom function to get the parameters for the model.
                 For example,
                     def get_params(trial: Trial, model: ModelName):
                         return {
@@ -95,9 +113,9 @@ class MQOptimizer:
                             "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
                             "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
                         }
-            valid_set (Optional[MQDataset], optional): Defaults to None.
+            valid_set (Optional[MQDataset], optional): The validation dataset. Defaults to None.
         Returns:
-            Dict[str, Any]: best params
+            Dict[str, Any]: The best hyperparameters found by the optimization process.
         """
         self._dataset = dataset
         self._MQObj = MQObjective(
@@ -107,7 +125,7 @@ class MQOptimizer:
             delta=self._delta,
         )
         if valid_set is None:
-            x_train, x_valid, y_train, y_valid = train_valid_split(
+            x_train, x_valid, y_train, y_valid = _train_valid_split(
                 x_train=self._dataset.data, y_train=self._dataset.label
             )
             dtrain = self._dataset.train_dtype(data=x_train, label=y_train)
@@ -147,9 +165,7 @@ class MQOptimizer:
         deval: Union[DtrainLike, pd.DataFrame],
         get_params_func: Callable,
     ) -> float:
-        """
-        objective function for optuna
-        """
+        """Objective function for Optuna to minimize."""
         params = get_params_func(trial=trial)
         params = set_monotone_constraints(
             params=params,
@@ -180,14 +196,29 @@ class MQOptimizer:
 
     @property
     def MQObj(self) -> MQObjective:
+        """
+        Get the MQObjective instance.
+        Returns:
+            MQObjective: The MQObjective instance.
+        """
         return self._MQObj
 
     @property
     def study(self) -> optuna.Study:
+        """
+        Get the Optuna study instance.
+        Returns:
+            optuna.Study: The Optuna study instance.
+        """
         return getattr(self, "_study", None)
 
     @property
     def best_params(self) -> Dict[str, Any]:
+        """
+        Get the best hyperparameters found by the optimization process.
+        Returns:
+            Dict[str, Any]: The best hyperparameters.
+        """
         self.__is_optimized()
         return {
             "params": self._study.best_params,
@@ -198,12 +229,15 @@ class MQOptimizer:
 
     @property
     def __is_lgb(self) -> bool:
+        """Check if the model is LightGBM."""
         return self._model == ModelName.lightgbm
 
     @property
     def __is_xgb(self) -> bool:
+        """Check if the model is XGBoost."""
         return self._model == ModelName.xgboost
 
     def __is_optimized(self) -> None:
+        """Check if the optimization process has been completed."""
         if not getattr(self, "_is_optimized", False):
             raise FittingException("Optimization is not completed.")

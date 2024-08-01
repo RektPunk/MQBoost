@@ -10,19 +10,52 @@ CHECK_LOSS: str = "check_loss"
 
 
 def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
+    """
+    Compute the gradient of the check loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+    Returns:
+        np.ndarray: The gradient of the check loss function.
+    """
     return (u < 0).astype(int) - alpha
 
 
 def _rho(u: np.ndarray, alpha: float) -> np.ndarray:
+    """
+    Compute the check loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+    Returns:
+        np.ndarray: The check loss.
+    """
     return -u * _grad_rho(u=u, alpha=alpha)
 
 
-def _error_delta_compare(u: np.ndarray, delta: float):
+def _error_delta_compare(u: np.ndarray, delta: float) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compare absolute errors with delta.
+    Args:
+        u (np.ndarray): The error term.
+        delta (float): The delta parameter.
+    Returns:
+        tuple: Two boolean arrays indicating where the errors are smaller or larger than delta.
+    """
     _abs_error = np.abs(u)
     return (_abs_error <= delta).astype(int), (_abs_error > delta).astype(int)
 
 
 def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    """
+    Compute the gradient of the huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+        delta (float): The delta parameter.
+    Returns:
+        np.ndarray: The gradient of the huber loss function.
+    """
     _smaller_delta, _bigger_delta = _error_delta_compare(u=u, delta=delta)
     _g = _grad_rho(u=u, alpha=alpha)
     _r = _rho(u=u, alpha=alpha)
@@ -34,6 +67,15 @@ def _train_pred_reshape(
     dtrain: DtrainLike,
     len_alpha: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Reshape training predictions and labels to match the number of quantile levels.
+    Args:
+        y_pred (np.ndarray): The predicted values.
+        dtrain (DtrainLike): The training data.
+        len_alpha (int): The number of quantile levels.
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Reshaped training labels and predictions.
+    """
     _y_train: np.ndarray = dtrain.get_label()
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
@@ -46,16 +88,16 @@ def _compute_grads_hess(
     **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute gradients for given loss function
+    Compute gradients and hessians for the given loss function.
     Args:
-        y_train (np.ndarray)
-        y_pred (np.ndarray)
-        alphas (List[float])
-        grad_fn (Callable[[np.ndarray, float, Any], np.ndarray])
-        **kwargs (Any): Additional arguments for grad_fn
+        y_pred (np.ndarray): The predicted values.
+        dtrain (DtrainLike): The training data.
+        alphas (List[float]): List of quantile levels.
+        grad_fn (Callable): The gradient function to be used.
+        **kwargs (Any): Additional arguments for the gradient function.
 
     Returns:
-        np.ndarray
+        Tuple[np.ndarray, np.ndarray]: The computed gradients and hessians.
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(
@@ -79,13 +121,13 @@ def _eval_check_loss(
     alphas: List[float],
 ) -> float:
     """
-    eval funcs
+    Evaluate the check loss function.
     Args:
-        y_pred (np.ndarray)
-        d_train (DtrainLike)
-        alphas (List[float])
+        y_pred (np.ndarray): The predicted values.
+        dtrain (DtrainLike): The training data.
+        alphas (List[float]): List of quantile levels.
     Returns:
-        float
+        float: The computed check loss.
     """
     _len_alpha = len(alphas)
     _y_train, _y_pred = _train_pred_reshape(
@@ -106,6 +148,15 @@ def _xgb_eval_loss(
     dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[str, float]:
+    """
+    Evaluation function for XGBoost.
+    Args:
+        y_pred (np.ndarray): The predicted values.
+        dtrain (DtrainLike): The training data.
+        alphas (List[float]): List of quantile levels.
+    Returns:
+        Tuple[str, float]: The evaluation metric name and the computed loss.
+    """
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss
 
@@ -115,25 +166,34 @@ def _lgb_eval_loss(
     dtrain: DtrainLike,
     alphas: List[float],
 ) -> Tuple[str, float, bool]:
+    """
+    Evaluation function for LightGBM.
+    Args:
+        y_pred (np.ndarray): The predicted values.
+        dtrain (DtrainLike): The training data.
+        alphas (List[float]): List of quantile levels.
+    Returns:
+        Tuple[str, float, bool]: The evaluation metric name, the computed loss, and a boolean flag.
+    """
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss, False
 
 
 class MQObjective:
     """
-    Monotone quantile objective and evaluation function
-    Attributes
-    ----------
-    alphas (List[float])
-    objective (ObjectiveName)
-    model (ModelName)
-    delta (float)
+    MQObjective provides a monotone quantile objective and evaluation function for models.
 
-    Property
-    ----
-    fobj
-    feval
-    eval_name
+    Attributes:
+        alphas (List[float]): List of quantile levels for the model.
+        objective (ObjectiveName): The objective function type (either 'huber' or 'check').
+        model (ModelName): The model type (either 'lightgbm' or 'xgboost').
+        delta (float): The delta parameter used for the 'huber' loss.
+
+    Properties:
+        fobj (Callable): The objective function to be minimized.
+        feval (Callable): The evaluation function used during training.
+        eval_name (str): The name of the evaluation metric.
+        delta (float): The delta parameter value.
     """
 
     def __init__(
@@ -143,6 +203,7 @@ class MQObjective:
         model: ModelName,
         delta: float,
     ) -> None:
+        """Initialize the MQObjective."""
         if objective == ObjectiveName.huber:
             self._delta = delta_validate(delta=delta)
             self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=self._delta)
@@ -157,16 +218,36 @@ class MQObjective:
 
     @property
     def fobj(self) -> Callable:
+        """
+        Get the objective function to be minimized.
+        Returns:
+            Callable: The objective function.
+        """
         return self._fobj
 
     @property
     def feval(self) -> Callable:
+        """
+        Get the evaluation function used during training.
+        Returns:
+            Callable: The evaluation function.
+        """
         return self._feval
 
     @property
     def eval_name(self) -> str:
+        """
+        Get the name of the evaluation metric.
+        Returns:
+            str: The evaluation metric name.
+        """
         return self._eval_name
 
     @property
     def delta(self) -> float:
+        """
+        Get the delta parameter for the huber loss.
+        Returns:
+            float: The delta parameter value.
+        """
         return self._delta
