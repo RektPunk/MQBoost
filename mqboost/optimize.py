@@ -62,8 +62,10 @@ class MQOptimizer:
 
     Attributes:
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
-        objective (str): The objective function for the quantile regression (either 'check' or 'huber'). Default is 'check'.
-        delta (float): Delta parameter for the 'huber' objective function. Default is 0.05.
+        objective (str):
+            The objective function for the quantile regression ('check', 'huber', or 'phuber').
+            Default is 'check'.
+        delta (float): Delta parameter for the 'huber' objective function. Default is 0.01.
         get_params (Callable): Function to get hyperparameters for the model.
 
     Methods:
@@ -80,7 +82,7 @@ class MQOptimizer:
         self,
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
-        delta: float = 0.05,
+        delta: float = 0.01,
     ) -> None:
         """Initialize the MQOptimizer."""
         self._model = ModelName.get(model)

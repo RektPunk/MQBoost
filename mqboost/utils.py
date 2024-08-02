@@ -84,20 +84,20 @@ def prepare_y(
 
 def delta_validate(delta: float) -> float:
     """
-    Validates the delta parameter ensuring it is a float and less than or equal to 0.1.
+    Validates the delta parameter ensuring it is a float and less than or equal to 0.05.
     Args:
         delta (float): The delta parameter.
     Returns:
         float: The validated delta parameter.
     Raises:
-        ValidationException: If delta is not a float or is greater than 0.1.
+        ValidationException: If delta is not a float or is greater than 0.05.
     """
-    _delta_upper_bound: float = 0.1
+    _delta_upper_bound: float = 0.05
 
     if not isinstance(delta, float):
         raise ValidationException("Delta is not float type")
 
     if delta > _delta_upper_bound:
-        raise ValidationException("Delta must be smaller than or equal to 0.1")
+        raise ValidationException("Delta must be smaller than or equal to 0.05")
 
     return delta

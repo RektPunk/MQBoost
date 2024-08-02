@@ -16,8 +16,8 @@ alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
 # Set objective function
-objective = "huber"  # Options: "huber" or "check"
-delta = 0.01  # Set when objective is "huber", default is 0.05
+objective = "huber"  # Options: "check", "huber", or "phuber"
+delta = 0.01  # Set when objective is "huber" or "phuber", default is 0.01
 
 # Train the model with fixed parameters
 # Initialize the LightGBM-based quantile regressor

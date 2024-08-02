@@ -22,6 +22,14 @@ def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
 
 
 def _hess_rho(u: np.ndarray, alpha: float) -> np.ndarray:
+    """
+    Compute the Hessian of the check and huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+    Returns:
+        np.ndarray: The Hessian of the check and huber loss function, which is a constant array of ones.
+    """
     _h = np.ones_like(u)
     return _h
 
@@ -62,21 +70,39 @@ def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
         np.ndarray: The gradient of the huber loss function.
     """
     _smaller_delta, _bigger_delta = _error_delta_compare(u=u, delta=delta)
-    _g = _grad_rho(u=u, alpha=alpha)
+    _grad = _grad_rho(u=u, alpha=alpha)
     _r = _rho(u=u, alpha=alpha)
-    return _r * _smaller_delta + _g * _bigger_delta
+    return _r * _smaller_delta + _grad * _bigger_delta
 
 
 def _grad_phuber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    """
+    Compute the gradient of the pseudo-Huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+        delta (float): The delta parameter.
+    Returns:
+        np.ndarray: The gradient of the pseudo-Huber loss function.
+    """
     scale = delta**2 + u**2
-    _g = -abs(_grad_rho(u, alpha)) * u / scale ** (1 / 2)
-    return _g
+    _grad = -abs(_grad_rho(u, alpha)) * u / scale ** (1 / 2)
+    return _grad
 
 
 def _hess_phuber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    """
+    Compute the Hessian of the pseudo-Huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+        delta (float): The delta parameter.
+    Returns:
+        np.ndarray: The Hessian of the pseudo-Huber loss function.
+    """
     scale = 1 + (u / delta) ** 2
-    _h = (1 / delta) * abs(_grad_rho(u, alpha)) / (scale ** (3 / 2))
-    return _h
+    _hess = (1 / delta) * abs(_grad_rho(u, alpha)) / (scale ** (3 / 2))
+    return _hess
 
 
 def _train_pred_reshape(
@@ -114,7 +140,6 @@ def _compute_grads_hess(
         grad_fn (Callable): The gradient function to be used.
         hess_fn (Callable): The Hessian function to be used.
         **kwargs (Any): Additional arguments for the gradient function.
-
     Returns:
         Tuple[np.ndarray, np.ndarray]: The computed gradients and hessians.
     """

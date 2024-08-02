@@ -22,10 +22,10 @@ class MQRegressor:
             Parameters for the model.
             Any params related to model can be used except "objective".
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
-        objective (str): The objective function (either 'check' or 'huber'). Default is 'check'.
+        objective (str): The objective function (either 'check', 'huber', or 'phuber'). Default is 'check'.
         delta (float):
-            Parameter for the 'huber' objective function.
-            Default is 0.05 and must be smaller than 0.1.
+            Parameter for the 'huber' or 'phuber' objective function.
+            Default is 0.01 and must be smaller than 0.05.
 
     Methods:
         fit(dataset, eval_set):
