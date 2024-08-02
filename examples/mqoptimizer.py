@@ -19,7 +19,7 @@ alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
 # Set objective function
-objective = "check"  # Options: "huber" or "check"
+objective = "check"  # Options: "check", "huber", or "phuber"
 
 # Set dataset
 train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
