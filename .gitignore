@@ -6,3 +6,4 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .pytest_cache/
+.mypy_cache/
