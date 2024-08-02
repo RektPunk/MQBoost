@@ -42,7 +42,7 @@ class MQRegressor:
         params: Dict[str, Any],
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
-        delta: float = 0.05,
+        delta: float = 0.01,
     ) -> None:
         """Initialize the MQRegressor."""
         self._params = params
