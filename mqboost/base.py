@@ -31,6 +31,7 @@ class ModelName(BaseEnum):
 class ObjectiveName(BaseEnum):
     check: str = "check"
     huber: str = "huber"
+    phuber: str = "phuber"
 
 
 class TypeName(BaseEnum):
