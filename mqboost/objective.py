@@ -21,6 +21,11 @@ def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
     return (u < 0).astype(int) - alpha
 
 
+def _hess_rho(u: np.ndarray, alpha: float) -> np.ndarray:
+    _h = np.ones_like(u)
+    return _h
+
+
 def _rho(u: np.ndarray, alpha: float) -> np.ndarray:
     """
     Compute the check loss function.
@@ -62,6 +67,23 @@ def _grad_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
     return _r * _smaller_delta + _g * _bigger_delta
 
 
+def _hess_huber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    _h = np.ones_like(u)
+    return _h
+
+
+def _grad_phuber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    scale = delta**2 + u**2
+    _g = -abs(_grad_rho(u, alpha)) * u / scale**(1/2)
+    return _g
+
+
+def _hess_phuber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    scale = 1 + (u / delta)**2
+    _h = (1 / delta) * abs(_grad_rho(u, alpha)) / (scale**(3/2))
+    return _h
+
+
 def _train_pred_reshape(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
@@ -85,6 +107,7 @@ def _compute_grads_hess(
     dtrain: DtrainLike,
     alphas: List[float],
     grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
+    hess_fn: Callable[[np.ndarray, float, Any], np.ndarray],
     **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -94,6 +117,7 @@ def _compute_grads_hess(
         dtrain (DtrainLike): The training data.
         alphas (List[float]): List of quantile levels.
         grad_fn (Callable): The gradient function to be used.
+        hess_fn (Callable): The Hessian function to be used.
         **kwargs (Any): Additional arguments for the gradient function.
 
     Returns:
@@ -103,16 +127,20 @@ def _compute_grads_hess(
     _y_train, _y_pred = _train_pred_reshape(
         y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
     )
-    grads = []
+    grads = []; hess = []
     for alpha_inx in range(len(alphas)):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-        _grad = grad_fn(u=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
+        _grad = grad_fn(u = _err_for_alpha, alpha = alphas[alpha_inx], **kwargs)
+        _hess = hess_fn(u = _err_for_alpha, alpha = alphas[alpha_inx], **kwargs)
         grads.append(_grad)
-    return np.concatenate(grads), np.ones_like(y_pred)
+        hess.append(_hess)
+        
+    return np.concatenate(grads), np.concatenate(hess)
 
 
-check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho)
-huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber)
+check_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_rho, hess_fn = _hess_rho)
+huber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_huber, hess_fn = _hess_huber)
+phuber_loss_grad_hess: Callable = partial(_compute_grads_hess, grad_fn=_grad_phuber, hess_fn = _hess_phuber)
 
 
 def _eval_check_loss(
@@ -209,6 +237,9 @@ class MQObjective:
             self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=self._delta)
         elif objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
+        elif objective == ObjectiveName.phuber:
+            self._delta = delta_validate(delta = delta)
+            self._fobj = partial(phuber_loss_grad_hess, alphas = alphas, delta = self._delta)
 
         self._eval_name = CHECK_LOSS
         if model == ModelName.lightgbm:
