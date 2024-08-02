@@ -1,5 +1,5 @@
 from itertools import chain, repeat
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -11,12 +11,13 @@ def alpha_validate(
     alphas: AlphaLike,
 ) -> List[float]:
     """
-    Validate alphas
+    Validates the list of alphas ensuring they are in ascending order and contain no duplicates.
     Args:
-        alphas (AlphaLike)
-
+        alphas (AlphaLike): A single alpha value or a list of alpha values.
     Returns:
-        List[float]
+        List[float]: A validated list of alpha values.
+    Raises:
+        ValidationException: If the input alpha list is empty, not in ascending order, or contains duplicates.
     """
     if isinstance(alphas, float):
         alphas = [alphas]
@@ -41,13 +42,14 @@ def prepare_x(
     alphas: List[float],
 ) -> pd.DataFrame:
     """
-    Return stacked X
+    Prepares and returns a stacked DataFrame of features repeated for each alpha, with an additional column indicating the alpha value.
     Args:
-        x (XdataLike)
-        alphas (List[float])
-
+        x (XdataLike): The input feature data, either as a numpy array, pandas Series, or DataFrame.
+        alphas (List[float]): A list of alpha values.
     Returns:
-        pd.DataFrame
+        pd.DataFrame: A DataFrame with features repeated for each alpha and an additional '_tau' column indicating the alpha value.
+    Raises:
+        ValidationException: If the input data contains a column named '_tau'.
     """
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
         x = pd.DataFrame(x)
@@ -65,31 +67,37 @@ def prepare_x(
     return _repeated_x
 
 
-def prepare_train(
-    x: XdataLike,
+def prepare_y(
     y: YdataLike,
     alphas: List[float],
-) -> Tuple[pd.DataFrame, np.ndarray]:
+) -> np.ndarray:
     """
-    Return stacked X, y for training
+    Prepares and returns a stacked array of target values repeated for each alpha.
     Args:
-        x (XdataLike)
-        y (YdataLike)
-        alphas (List[float])
-
+        y (YdataLike): The input target data.
+        alphas (List[float]): A list of alpha values.
     Returns:
-        Tuple[pd.DataFrame, np.ndarray]
+        np.ndarray: An array with target values repeated for each alpha.
     """
-    _train_df = prepare_x(x=x, alphas=alphas)
-    _repeated_y = np.concatenate(list(repeat(y, len(alphas))))
-    return (_train_df, _repeated_y)
+    return np.concatenate(list(repeat(y, len(alphas))))
 
 
-def delta_validate(delta: float) -> None:
+def delta_validate(delta: float) -> float:
+    """
+    Validates the delta parameter ensuring it is a float and less than or equal to 0.1.
+    Args:
+        delta (float): The delta parameter.
+    Returns:
+        float: The validated delta parameter.
+    Raises:
+        ValidationException: If delta is not a float or is greater than 0.1.
+    """
     _delta_upper_bound: float = 0.1
 
     if not isinstance(delta, float):
-        raise ValidationException("delta is not float type")
+        raise ValidationException("Delta is not float type")
 
     if delta > _delta_upper_bound:
-        raise ValidationException("Delta must be smaller than 0.1")
+        raise ValidationException("Delta must be smaller than or equal to 0.1")
+
+    return delta

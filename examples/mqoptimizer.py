@@ -1,11 +1,14 @@
 import numpy as np
 from optuna import Trial
-from mqboost import MQRegressor
+
+from mqboost import MQDataset, MQOptimizer, MQRegressor
 
 # Generate sample data
 sample_size = 500
 x = np.linspace(-10, 10, sample_size)
 y = np.sin(x) + np.random.uniform(-0.4, 0.4, sample_size)
+x_valid = np.linspace(-10, 10, sample_size)
+y_valid = np.sin(x_valid) + np.random.uniform(-0.4, 0.4, sample_size)
 x_test = np.linspace(-10, 10, sample_size)
 y_test = np.sin(x_test) + np.random.uniform(-0.4, 0.4, sample_size)
 
@@ -16,39 +19,29 @@ alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
 # Set objective function
-objective = "huber"  # Options: "huber" or "check"
-delta = 0.01  # Set when objective is "huber", default is 0.05
+objective = "check"  # Options: "huber" or "check"
 
-# Initialize the LightGBM-based quantile regressor
-mq_lgb = MQRegressor(
-    x=x,
-    y=y,
-    alphas=alphas,
-    objective=objective,
+# Set dataset
+train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
+valid_dataset = MQDataset(data=x_valid, label=y_valid, alphas=alphas, model=model)
+test_dataset = MQDataset(data=x_test, label=y_test, alphas=alphas, model=model)
+
+# Initialize the optimizer
+mq_optimizer = MQOptimizer(
     model=model,
-    delta=delta,
+    objective=objective,
 )
 
-# Train the model with fixed parameters
-lgb_params = {
-    "max_depth": 4,
-    "num_leaves": 15,
-    "learning_rate": 0.1,
-    "boosting_type": "gbdt",
-}
-mq_lgb.train(params=lgb_params)
-
-# Train the model with Optuna hyperparameter optimization
-mq_lgb.train(n_trials=10)
-
-# Alternatively, optimize parameters first and then train
-best_params = mq_lgb.optimize_params(n_trials=10)
-mq_lgb.train(params=best_params)
+# Optimize params using Optuna
+mq_optimizer.optimize_params(
+    dataset=train_dataset,
+    n_trials=10,
+)
 
 
 # Moreover, you can optimize parameters by implementing functions manually
 # Also, you can manually set the validation set
-def get_params(trial: Trial, model: str):
+def get_params(trial: Trial):
     return {
         "verbose": -1,
         "learning_rate": trial.suggest_float("learning_rate", 1e-2, 1.0, log=True),
@@ -62,15 +55,16 @@ def get_params(trial: Trial, model: str):
     }
 
 
-valid_dict = {
-    "data": x_test,
-    "label": y_test,
-}
-
-best_params = mq_lgb.optimize_params(
-    n_trials=10, get_params_func=get_params, valid_dict=valid_dict
+mq_optimizer.optimize_params(
+    dataset=train_dataset,
+    n_trials=10,
+    get_params_func=get_params,
+    valid_set=valid_dataset,
 )
-mq_lgb.train(params=best_params)
+
+# Init MQRegressor with best params
+mq_regressor = MQRegressor(**mq_optimizer.best_params)
+mq_regressor.fit(dataset=train_dataset, eval_set=valid_dataset)
 
 # Predict using the trained model
-preds_lgb = mq_lgb.predict(x=x_test, alphas=alphas)
+mq_regressor.predict(dataset=test_dataset)

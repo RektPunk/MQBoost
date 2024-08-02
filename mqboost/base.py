@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from typing import Callable, Dict, List, Union
 
 import lightgbm as lgb
@@ -7,7 +7,7 @@ import pandas as pd
 import xgboost as xgb
 
 
-class BaseEnum(StrEnum):
+class BaseEnum(Enum):
     @classmethod
     def get(cls, text: str) -> "BaseEnum":
         cls._isin(text)
@@ -20,6 +20,14 @@ class BaseEnum(StrEnum):
             raise ValueError(
                 f"Invalid value: '{text}'. Expected one of: {valid_members}."
             )
+
+
+# Type
+XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
+YdataLike = Union[pd.Series, np.ndarray]
+AlphaLike = Union[List[float], float]
+ModelLike = Union[lgb.basic.Booster, xgb.Booster]
+DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
 
 
 # Name
@@ -46,10 +54,14 @@ class MQStr(BaseEnum):
 
 
 # Functions
+def _lgb_predict_dtype(data: XdataLike):
+    return data
+
+
 FUNC_TYPE: Dict[ModelName, Dict[TypeName, Callable]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
-        TypeName.predict_dtype: lambda x: x,
+        TypeName.predict_dtype: _lgb_predict_dtype,
         TypeName.constraints_type: list,
     },
     ModelName.xgboost: {
@@ -58,14 +70,6 @@ FUNC_TYPE: Dict[ModelName, Dict[TypeName, Callable]] = {
         TypeName.constraints_type: tuple,
     },
 }
-
-
-# Type
-XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
-YdataLike = Union[pd.Series, np.ndarray]
-AlphaLike = Union[List[float], float]
-ModelLike = Union[lgb.basic.Booster, xgb.Booster]
-DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
 
 
 # Exception
