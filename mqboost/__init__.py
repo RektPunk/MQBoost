@@ -1,5 +1,5 @@
 from mqboost.dataset import MQDataset
-from mqboost.regressor import MQRegressor
 from mqboost.optimize import MQOptimizer
+from mqboost.regressor import MQRegressor
 
 __version__ = "0.1.5"
