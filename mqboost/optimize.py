@@ -63,8 +63,7 @@ class MQOptimizer:
     Attributes:
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
         objective (str):
-            The objective function for the quantile regression ('check', 'huber', or 'phuber').
-            Default is 'check'.
+            The objective function for the quantile regression ('check', 'huber', or 'phuber'). Default is 'check'.
         delta (float): Delta parameter for the 'huber' objective function. Default is 0.01.
         get_params (Callable): Function to get hyperparameters for the model.
 
