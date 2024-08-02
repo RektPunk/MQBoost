@@ -20,7 +20,6 @@ model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
 # Set objective function
 objective = "check"  # Options: "huber" or "check"
-delta = 0.01  # Set when objective is "huber", default is 0.05
 
 # Set dataset
 train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
@@ -31,7 +30,6 @@ test_dataset = MQDataset(data=x_test, label=y_test, alphas=alphas, model=model)
 mq_optimizer = MQOptimizer(
     model=model,
     objective=objective,
-    # delta=delta,
 )
 
 # Optimize params using Optuna
