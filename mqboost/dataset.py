@@ -21,7 +21,9 @@ class MQDataset:
     It supports both LightGBM and XGBoost models, handling data preparation, validation, and conversion for training and prediction.
 
     Attributes:
-        alphas (List[float]): List of quantile levels.
+        alphas (List[float]):
+            List of quantile levels.
+            Must be in ascending order and contain no duplicates.
         data (pd.DataFrame): The input features.
         label (pd.DataFrame): The target labels (if provided).
         model (ModelName): The model type (LightGBM or XGBoost).

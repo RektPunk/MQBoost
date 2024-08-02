@@ -18,7 +18,9 @@ class MQRegressor:
     preserving monotonicity among quantiles.
 
     Attributes:
-        params (Dict[str, Any]): Parameters for the model.
+        params (Dict[str, Any]):
+            Parameters for the model.
+            Any params related to model can be used except "objective".
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
         objective (str): The objective function (either 'check' or 'huber'). Default is 'check'.
         delta (float):
