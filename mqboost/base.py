@@ -40,6 +40,7 @@ class ObjectiveName(BaseEnum):
     check: str = "check"
     huber: str = "huber"
     phuber: str = "phuber"
+    phuber2: str = "phuber2"
 
 
 class TypeName(BaseEnum):

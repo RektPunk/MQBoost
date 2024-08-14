@@ -92,12 +92,12 @@ def delta_validate(delta: float) -> float:
     Raises:
         ValidationException: If delta is not a float or is greater than 0.05.
     """
-    _delta_upper_bound: float = 0.05
+    _delta_upper_bound: float = 10.0
 
     if not isinstance(delta, float):
         raise ValidationException("Delta is not float type")
 
     if delta > _delta_upper_bound:
-        raise ValidationException("Delta must be smaller than or equal to 0.05")
+        raise ValidationException("Delta must be smaller than or equal to 10.0")
 
     return delta

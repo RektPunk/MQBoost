@@ -105,6 +105,45 @@ def _hess_phuber(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
     return _hess
 
 
+def _grad_phuber2(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    """
+    Compute the gradient of the pseudo-Huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+        delta (float): The delta parameter.
+    Returns:
+        np.ndarray: The gradient of the pseudo-Huber loss function.
+    """
+
+    h = _grad_rho(u, alpha) ** 2 * u**2 / (delta**2)
+
+    _grad = -1 * (1 / np.sqrt(1 + h)) * abs(_grad_rho(u, alpha)) * u
+    return _grad
+
+
+# _grad_rho(u < 0).astype(int) - alpha
+
+
+def _hess_phuber2(u: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+    """
+    Compute the Hessian of the pseudo-Huber loss function.
+    Args:
+        u (np.ndarray): The error term.
+        alpha (float): The quantile level.
+        delta (float): The delta parameter.
+    Returns:
+        np.ndarray: The Hessian of the pseudo-Huber loss function.
+    """
+    h = _grad_rho(u, alpha) ** 2 * u**2 / (delta**2)
+
+    _hess = (1 + h) ** (-3 / 2) / 2 * (abs(_grad_rho(u, alpha)) * u) ** 2 + (1 + h) ** (
+        -1 / 2
+    ) * (-1 * _grad_rho(u, alpha))
+
+    return _hess
+
+
 def _train_pred_reshape(
     y_pred: np.ndarray,
     dtrain: DtrainLike,
@@ -167,6 +206,10 @@ huber_loss_grad_hess: Callable = partial(
 )
 phuber_loss_grad_hess: Callable = partial(
     _compute_grads_hess, grad_fn=_grad_phuber, hess_fn=_hess_phuber
+)
+
+phuber2_loss_grad_hess: Callable = partial(
+    _compute_grads_hess, grad_fn=_grad_phuber2, hess_fn=_hess_phuber2
 )
 
 
@@ -268,6 +311,11 @@ class MQObjective:
             self._delta = delta_validate(delta=delta)
             self._fobj = partial(
                 phuber_loss_grad_hess, alphas=alphas, delta=self._delta
+            )
+        elif objective == ObjectiveName.phuber2:
+            self._delta = delta_validate(delta=delta)
+            self._fobj = partial(
+                phuber2_loss_grad_hess, alphas=alphas, delta=self._delta
             )
 
         self._eval_name = CHECK_LOSS
