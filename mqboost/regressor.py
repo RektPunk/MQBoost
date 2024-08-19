@@ -45,7 +45,7 @@ class MQRegressor:
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.01,
-        epsilon: float = 1e-5
+        epsilon: float = 1e-5,
     ) -> None:
         """Initialize the MQRegressor."""
         self._params = params
@@ -81,6 +81,7 @@ class MQRegressor:
             objective=self._objective,
             model=self._model,
             delta=self._delta,
+            epsilon=self._epsilon,
         )
         if self.__is_lgb:
             params.update({MQStr.obj.value: self._MQObj.fobj})
