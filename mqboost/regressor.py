@@ -22,11 +22,13 @@ class MQRegressor:
             Parameters for the model.
             Any params related to model can be used except "objective".
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
-        objective (str): The objective function (either 'check', 'huber', or 'phuber'). Default is 'check'.
+        objective (str): The objective function (either 'check', 'huber', or 'approx'). Default is 'check'.
         delta (float):
-            Parameter for the 'huber' or 'phuber' objective function.
+            Parameter for the 'huber' objective function.
             Default is 0.01 and must be smaller than 0.05.
-
+        epsilon (float):
+            Parameter for the 'smooth approximated check' objective function.
+            Default is 1e-5.
     Methods:
         fit(dataset, eval_set):
             Fits the regressor to the provided dataset, optionally evaluating on a separate validation set.
@@ -43,12 +45,14 @@ class MQRegressor:
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.01,
+        epsilon: float = 1e-5
     ) -> None:
         """Initialize the MQRegressor."""
         self._params = params
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)
         self._delta = delta
+        self._epsilon = epsilon
 
     def fit(
         self,
