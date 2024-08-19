@@ -46,29 +46,29 @@ def _rho(u: np.ndarray, alpha: float) -> np.ndarray:
     return -u * _grad_rho(u=u, alpha=alpha)
 
 
-def _grad_majorizer(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
+def _grad_approx(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
     """
-    Compute the gradient of the majorizer of the smooth approximated check loss function.
+    Compute the gradient of the approx of the smooth approximated check loss function.
     Args:
         u (np.ndarray): The error term.
         alpha (float): The quantile level.
         epsilon (float, optional): The perturbation imposing smoothness. Defaults to 1e-5.
     Returns:
-        np.ndarray: The gradient of the majorizer of the smooth approximated check loss function. 
+        np.ndarray: The gradient of the approx of the smooth approximated check loss function.
     """
-    _grad = (1 - 2 * alpha - u / (epsilon + np.abs(u))) / 2
+    _grad = 0.5 * (1 - 2 * alpha - u / (epsilon + np.abs(u)))
     return _grad
 
 
-def _hess_majorizer(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
+def _hess_approx(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
     """
-    Compute the Hessian of the majorizer of the smooth approximated check loss function.
+    Compute the Hessian of the approx of the smooth approximated check loss function.
     Args:
         u (np.ndarray): The error term.
         alpha (float): The quantile level.
         epsilon (float, optional): The perturbation imposing smoothness. Defaults to 1e-5.
     Returns:
-        np.ndarray: The Hessian of the majorizer of the smooth approximated check loss function.
+        np.ndarray: The Hessian of the approx of the smooth approximated check loss function.
     """
     _hess = 1 / (2 * (epsilon + np.abs(u)))
     return _hess
@@ -163,8 +163,8 @@ check_loss_grad_hess: Callable = partial(
 huber_loss_grad_hess: Callable = partial(
     _compute_grads_hess, grad_fn=_grad_huber, hess_fn=_hess_rho
 )
-majorizer_loss_grad_hess: Callable = partial(
-    _compute_grads_hess, grad_fn=_grad_majorizer, hess_fn=_hess_majorizer
+approx_loss_grad_hess: Callable = partial(
+    _compute_grads_hess, grad_fn=_grad_approx, hess_fn=_hess_approx
 )
 
 
@@ -255,6 +255,7 @@ class MQObjective:
         objective: ObjectiveName,
         model: ModelName,
         delta: float,
+        epsilon: float,
     ) -> None:
         """Initialize the MQObjective."""
         if objective == ObjectiveName.huber:
@@ -263,10 +264,7 @@ class MQObjective:
         elif objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
         elif objective == ObjectiveName.approx:
-            self._delta = delta_validate(delta=delta)
-            self._fobj = partial(
-                majorizer_loss_grad_hess, alphas=alphas, epsilon=self._epsilon
-            )
+            self._fobj = partial(approx_loss_grad_hess, alphas=alphas, epsilon=epsilon)
 
         self._eval_name = CHECK_LOSS
         if model == ModelName.lightgbm:
