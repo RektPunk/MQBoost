@@ -8,11 +8,11 @@ repos:
     -   id: check-yaml
     -   id: check-json
 -   repo: https://github.com/psf/black
-    rev: stable
+    rev: 24.8.0
     hooks:
     -   id: black
 -   repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
     -   id: isort
         args: ["--profile", "black"]
