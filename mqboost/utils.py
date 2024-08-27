@@ -22,6 +22,9 @@ def alpha_validate(
     if isinstance(alphas, float):
         alphas = [alphas]
 
+    if 0.0 in alphas or 1.0 in alphas:
+        raise ValidationException("Alpha cannot be 0 or 1")
+
     _len_alphas = len(alphas)
     if _len_alphas == 0:
         raise ValidationException("Input alpha is not valid")
