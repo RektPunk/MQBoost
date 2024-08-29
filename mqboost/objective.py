@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -21,7 +21,7 @@ def _grad_rho(u: np.ndarray, alpha: float) -> np.ndarray:
     return (u < 0).astype(int) - alpha
 
 
-def _hess_rho(u: np.ndarray, alpha: float) -> np.ndarray:
+def _hess_rho(u: np.ndarray, alpha: float, delta: Optional[float] = None) -> np.ndarray:
     """
     Compute the Hessian of the check and huber loss function.
     Args:
