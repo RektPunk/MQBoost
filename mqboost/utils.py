@@ -1,3 +1,4 @@
+import warnings
 from itertools import chain, repeat
 from typing import List
 
@@ -100,7 +101,10 @@ def delta_validate(delta: float) -> float:
     if not isinstance(delta, float):
         raise ValidationException("Delta is not float type")
 
+    if delta <= 0:
+        raise ValidationException("Delta must be positive")
+
     if delta > _delta_upper_bound:
-        raise ValidationException("Delta must be smaller than or equal to 0.05")
+        warnings.warn("Delta should be 0.05 or less.")
 
     return delta
