@@ -46,7 +46,7 @@ def _rho(u: np.ndarray, alpha: float) -> np.ndarray:
     return -u * _grad_rho(u=u, alpha=alpha)
 
 
-def _grad_approx(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
+def _grad_approx(u: np.ndarray, alpha: float, epsilon: float):
     """
     Compute the gradient of the approx of the smooth approximated check loss function.
     Args:
@@ -60,7 +60,7 @@ def _grad_approx(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
     return _grad
 
 
-def _hess_approx(u: np.ndarray, alpha: float, epsilon: float = 1e-5):
+def _hess_approx(u: np.ndarray, alpha: float, epsilon: float):
     """
     Compute the Hessian of the approx of the smooth approximated check loss function.
     Args:
@@ -241,12 +241,11 @@ class MQObjective:
         objective (ObjectiveName): The objective function type (either 'huber' or 'check').
         model (ModelName): The model type (either 'lightgbm' or 'xgboost').
         delta (float): The delta parameter used for the 'huber' loss.
+        epsilon (float): The epsilon parameter used for the 'approx' loss.
 
     Properties:
         fobj (Callable): The objective function to be minimized.
         feval (Callable): The evaluation function used during training.
-        eval_name (str): The name of the evaluation metric.
-        delta (float): The delta parameter value.
     """
 
     def __init__(
@@ -266,7 +265,6 @@ class MQObjective:
         elif objective == ObjectiveName.approx:
             self._fobj = partial(approx_loss_grad_hess, alphas=alphas, epsilon=epsilon)
 
-        self._eval_name = CHECK_LOSS
         if model == ModelName.lightgbm:
             self._feval = partial(_lgb_eval_loss, alphas=alphas)
         elif model == ModelName.xgboost:
@@ -289,21 +287,3 @@ class MQObjective:
             Callable: The evaluation function.
         """
         return self._feval
-
-    @property
-    def eval_name(self) -> str:
-        """
-        Get the name of the evaluation metric.
-        Returns:
-            str: The evaluation metric name.
-        """
-        return self._eval_name
-
-    @property
-    def delta(self) -> float:
-        """
-        Get the delta parameter for the huber loss.
-        Returns:
-            float: The delta parameter value.
-        """
-        return self._delta
