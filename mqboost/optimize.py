@@ -65,6 +65,7 @@ class MQOptimizer:
         objective (str):
             The objective function for the quantile regression ('check', 'huber', or 'phuber'). Default is 'check'.
         delta (float): Delta parameter for the 'huber' objective function. Default is 0.01.
+        epsilon (float): Epsilon parameter for the 'apptox' objective function. Default is 1e-5.
         get_params (Callable): Function to get hyperparameters for the model.
 
     Methods:
@@ -82,11 +83,13 @@ class MQOptimizer:
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.01,
+        epsilon: float = 1e-5,
     ) -> None:
         """Initialize the MQOptimizer."""
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)
         self._delta = delta_validate(delta)
+        self._epsilon = epsilon
         self._get_params = _GET_PARAMS_FUNC.get(self._model)
 
     def optimize_params(
@@ -124,6 +127,7 @@ class MQOptimizer:
             objective=self._objective,
             model=self._model,
             delta=self._delta,
+            epsilon=self._epsilon,
         )
         if valid_set is None:
             x_train, x_valid, y_train, y_valid = _train_valid_split(
