@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, review_requested]
+
+jobs:
+  run-pytest:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Install dependencies
+      run: poetry install --no-root --no-interaction --with dev
+
+    - name: Run tests
+      run: poetry run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=tests/ > pytest-coverage.txt
+
+    - name: Pytest coverage comment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-coverage-path: ./pytest-coverage.txt
+        junitxml-path: ./pytest.xml
