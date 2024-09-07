@@ -171,7 +171,7 @@ class MQObjective:
         epsilon: float,
     ) -> None:
         """Initialize the MQObjective."""
-        if object == ObjectiveName.check:
+        if objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
         elif objective == ObjectiveName.huber:
             _delta = delta_validate(delta=delta)
