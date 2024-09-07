@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable
 
 import pandas as pd
 
@@ -21,7 +21,7 @@ class MQDataset:
     It supports both LightGBM and XGBoost models, handling data preparation, validation, and conversion for training and prediction.
 
     Attributes:
-        alphas (List[float]):
+        alphas (list[float]):
             List of quantile levels.
             Must be in ascending order and contain no duplicates.
         data (pd.DataFrame): The input features.
@@ -45,7 +45,7 @@ class MQDataset:
         self,
         alphas: AlphaLike,
         data: XdataLike,
-        label: Optional[YdataLike] = None,
+        label: YdataLike | None = None,
         model: str = ModelName.lightgbm.value,
     ) -> None:
         """Initialize the MQDataset."""
@@ -66,94 +66,54 @@ class MQDataset:
 
     @property
     def train_dtype(self) -> Callable:
-        """
-        Get the data type function for training data.
-        Returns:
-            Callable: The function that converts data to the required training data type.
-        """
+        """Get the data type function for training data."""
         return self._train_dtype
 
     @property
     def predict_dtype(self) -> Callable:
-        """
-        Get the data type function for prediction data.
-        Returns:
-            Callable: The function that converts data to the required prediction data type.
-        """
+        """Get the data type function for prediction data."""
         return self._predict_dtype
 
     @property
     def model(self) -> ModelName:
-        """
-        Get the model type.
-        Returns:
-            ModelName: The model type (LightGBM or XGBoost).
-        """
+        """Get the model type."""
         return self._model
 
     @property
     def columns(self) -> pd.Index:
-        """
-        Get the column names of the input features.
-        Returns:
-            pd.Index: The column names.
-        """
+        """Get the column names of the input features."""
         return self._columns
 
     @property
     def nrow(self) -> int:
-        """
-        Get the number of rows in the dataset.
-        Returns:
-            int: The number of rows.
-        """
+        """Get the number of rows in the dataset."""
         return self._nrow
 
     @property
     def data(self) -> pd.DataFrame:
-        """
-        Get the raw input features.
-        Returns:
-            pd.DataFrame: The input features.
-        """
+        """Get the raw input features."""
         return self._data
 
     @property
     def label(self) -> pd.DataFrame:
-        """
-        Get the raw target labels.
-        Returns:
-            pd.DataFrame: The target labels.
-        """
+        """Get the raw target labels."""
         self.__label_available()
         return self._label
 
     @property
-    def alphas(self) -> List[float]:
-        """
-        Get the list of quantile levels.
-        Returns:
-            List[float]: The quantile levels.
-        """
+    def alphas(self) -> list[float]:
+        """Get the list of quantile levels."""
         return self._alphas
 
     @property
     def dtrain(self) -> DtrainLike:
-        """
-        Get the training data in the required format for the model.
-        Returns:
-            DtrainLike: The training data.
-        """
+        """Get the training data in the required format for the model."""
         self.__label_available()
         return self._train_dtype(data=self._data, label=self._label)
 
     @property
-    def dpredict(self) -> Union[DtrainLike, Callable]:
-        """
-        Get the prediction data in the required format for the model.
-        Returns:
-            Union[DtrainLike, Callable]: The prediction data.
-        """
+    def dpredict(self) -> DtrainLike | Callable:
+        """Get the prediction data in the required format for the model."""
         return self._predict_dtype(data=self._data)
 
     def __label_available(self) -> None:
