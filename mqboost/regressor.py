@@ -1,10 +1,8 @@
-from typing import Any, Dict, Optional
-
 import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, MQStr, ObjectiveName
+from mqboost.base import FittingException, ModelName, MQStr, ObjectiveName, ParamsLike
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
@@ -18,7 +16,7 @@ class MQRegressor:
     preserving monotonicity among quantiles.
 
     Attributes:
-        params (Dict[str, Any]):
+        params (dict[str, Any]):
             Parameters for the model.
             Any params related to model can be used except "objective".
         model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
@@ -41,7 +39,7 @@ class MQRegressor:
 
     def __init__(
         self,
-        params: Dict[str, Any],
+        params: ParamsLike,
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.01,
@@ -57,7 +55,7 @@ class MQRegressor:
     def fit(
         self,
         dataset: MQDataset,
-        eval_set: Optional[MQDataset] = None,
+        eval_set: MQDataset | None = None,
     ) -> None:
         """
         Fit the regressor to the dataset.
@@ -119,21 +117,13 @@ class MQRegressor:
         return _pred
 
     def __predict_available(self) -> None:
-        """
-        Check if the model has been fitted before making predictions.
-        Raises:
-            FittingException: If the model has not been fitted.
-        """
+        """Check if the model has been fitted before making predictions."""
         if not getattr(self, "_fitted", False):
             raise FittingException("Fit must be executed before predict")
 
     @property
     def MQObj(self) -> MQObjective:
-        """
-        Get the MQObjective instance.
-        Returns:
-            MQObjective: The MQObjective instance.
-        """
+        """Get the MQObjective instance."""
         return self._MQObj
 
     @property
