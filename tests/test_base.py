@@ -34,7 +34,7 @@ def test_objective_name_enum():
 
 
 # Test FUNC_TYPE
-def test_func_type_for_lightgbm():
+def test_func_type_for_lgb():
     assert FUNC_TYPE[ModelName.lightgbm][TypeName.train_dtype] == lgb.Dataset
     assert isinstance(
         FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](pd.DataFrame([1, 2, 3])),
@@ -51,7 +51,7 @@ def test_func_type_for_lightgbm():
     assert FUNC_TYPE[ModelName.lightgbm][TypeName.constraints_type] == list
 
 
-def test_func_type_for_xgboost():
+def test_func_type_for_xgb():
     assert FUNC_TYPE[ModelName.xgboost][TypeName.train_dtype] == xgb.DMatrix
     assert FUNC_TYPE[ModelName.xgboost][TypeName.predict_dtype] == xgb.DMatrix
     assert FUNC_TYPE[ModelName.xgboost][TypeName.constraints_type] == tuple

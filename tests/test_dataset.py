@@ -11,7 +11,7 @@ def _concat(df: pd.DataFrame, concat_count: int):
 
 
 # Test for MQDataset initialization
-def test_mqdataset_initialization_with_lightgbm():
+def test_mqdataset_initialization_with_lgb():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2, 0.3]
@@ -28,7 +28,7 @@ def test_mqdataset_initialization_with_lightgbm():
     np.testing.assert_array_equal(dataset.label, np.concatenate([label] * len(alphas)))
 
 
-def test_mqdataset_initialization_with_xgboost():
+def test_mqdataset_initialization_with_xgb():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]

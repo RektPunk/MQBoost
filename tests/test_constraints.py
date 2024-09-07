@@ -5,7 +5,7 @@ from mqboost.constraints import set_monotone_constraints
 
 
 # Test function for setting monotone constraints
-def test_set_monotone_constraints_with_existing_constraints_lightgbm():
+def test_set_monotone_constraints_with_existing_constraints_lgb():
     params = {
         MQStr.mono.value: [1, -1],
     }
@@ -16,7 +16,7 @@ def test_set_monotone_constraints_with_existing_constraints_lightgbm():
     assert updated_params[MQStr.mono.value] == expected_constraints
 
 
-def test_set_monotone_constraints_without_existing_constraints_lightgbm():
+def test_set_monotone_constraints_without_existing_constraints_lgb():
     params = {}
     columns = pd.Index(["feature_1", "feature_2", "_tau"])
     model_name = ModelName.lightgbm
@@ -25,7 +25,7 @@ def test_set_monotone_constraints_without_existing_constraints_lightgbm():
     assert updated_params[MQStr.mono.value] == expected_constraints
 
 
-def test_set_monotone_constraints_with_existing_constraints_xgboost():
+def test_set_monotone_constraints_with_existing_constraints_xgb():
     params = {
         MQStr.mono.value: [1, -1],
     }
@@ -36,7 +36,7 @@ def test_set_monotone_constraints_with_existing_constraints_xgboost():
     assert updated_params[MQStr.mono.value] == expected_constraints
 
 
-def test_set_monotone_constraints_without_existing_constraints_xgboost():
+def test_set_monotone_constraints_without_existing_constraints_xgb():
     params = {}
     columns = pd.Index(["feature_1", "feature_2", "_tau"])
     model_name = ModelName.xgboost
