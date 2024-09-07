@@ -1,6 +1,5 @@
 import warnings
 from itertools import chain, repeat
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -10,16 +9,8 @@ from mqboost.base import AlphaLike, ValidationException, XdataLike, YdataLike
 
 def alpha_validate(
     alphas: AlphaLike,
-) -> List[float]:
-    """
-    Validates the list of alphas ensuring they are in ascending order and contain no duplicates.
-    Args:
-        alphas (AlphaLike): A single alpha value or a list of alpha values.
-    Returns:
-        List[float]: A validated list of alpha values.
-    Raises:
-        ValidationException: If the input alpha list is empty, not in ascending order, or contains duplicates.
-    """
+) -> list[float]:
+    """Validates the list of alphas ensuring they are in ascending order and contain no duplicates."""
     if isinstance(alphas, float):
         alphas = [alphas]
 
@@ -43,15 +34,9 @@ def alpha_validate(
 
 def prepare_x(
     x: XdataLike,
-    alphas: List[float],
+    alphas: list[float],
 ) -> pd.DataFrame:
-    """
-    Prepares and returns a stacked DataFrame of features repeated for each alpha, with an additional column indicating the alpha value.
-    Args:
-        x (XdataLike): The input feature data, either as a numpy array, pandas Series, or DataFrame.
-        alphas (List[float]): A list of alpha values.
-    Returns:
-        pd.DataFrame: A DataFrame with features repeated for each alpha and an additional '_tau' column indicating the alpha value.
+    """Prepares and returns a stacked DataFrame of features repeated for each alpha, with an additional column indicating the alpha value.
     Raises:
         ValidationException: If the input data contains a column named '_tau'.
     """
@@ -73,29 +58,14 @@ def prepare_x(
 
 def prepare_y(
     y: YdataLike,
-    alphas: List[float],
+    alphas: list[float],
 ) -> np.ndarray:
-    """
-    Prepares and returns a stacked array of target values repeated for each alpha.
-    Args:
-        y (YdataLike): The input target data.
-        alphas (List[float]): A list of alpha values.
-    Returns:
-        np.ndarray: An array with target values repeated for each alpha.
-    """
+    """Prepares and returns a stacked array of target values repeated for each alpha."""
     return np.concatenate(list(repeat(y, len(alphas))))
 
 
 def delta_validate(delta: float) -> float:
-    """
-    Validates the delta parameter ensuring it is a float and less than or equal to 0.05.
-    Args:
-        delta (float): The delta parameter.
-    Returns:
-        float: The validated delta parameter.
-    Raises:
-        ValidationException: If delta is not a float or is greater than 0.05.
-    """
+    """Validates the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
     _delta_upper_bound: float = 0.05
 
     if not isinstance(delta, float):

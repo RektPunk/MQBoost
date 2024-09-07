@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Callable
 
 import lightgbm as lgb
 import numpy as np
@@ -8,7 +8,14 @@ import xgboost as xgb
 from optuna import Trial
 from sklearn.model_selection import train_test_split
 
-from mqboost.base import DtrainLike, FittingException, ModelName, MQStr, ObjectiveName
+from mqboost.base import (
+    DtrainLike,
+    FittingException,
+    ModelName,
+    MQStr,
+    ObjectiveName,
+    ParamsLike,
+)
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
@@ -50,7 +57,7 @@ _GET_PARAMS_FUNC = {
 
 def _train_valid_split(
     x_train: pd.DataFrame, y_train: np.ndarray
-) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
+) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
     return train_test_split(
         x_train, y_train, test_size=0.2, random_state=42, stratify=x_train["_tau"]
     )
@@ -96,9 +103,9 @@ class MQOptimizer:
         self,
         dataset: MQDataset,
         n_trials: int,
-        get_params_func: Optional[Callable] = None,
-        valid_set: Optional[MQDataset] = None,
-    ) -> Dict[str, Any]:
+        get_params_func: Callable[[Trial], ParamsLike] | None = None,
+        valid_set: MQDataset | None = None,
+    ) -> ParamsLike:
         """
         Optimize hyperparameters.
         Args:
@@ -167,8 +174,8 @@ class MQOptimizer:
         trial: optuna.Trial,
         dtrain: DtrainLike,
         dvalid: DtrainLike,
-        deval: Union[DtrainLike, pd.DataFrame],
-        get_params_func: Callable,
+        deval: DtrainLike | pd.DataFrame,
+        get_params_func: Callable[[Trial], ParamsLike],
     ) -> float:
         """Objective function for Optuna to minimize."""
         params = get_params_func(trial=trial)
@@ -196,34 +203,22 @@ class MQOptimizer:
             _preds = _gbm.predict(data=deval)
             _, loss = self._MQObj.feval(y_pred=_preds, dtrain=dvalid)
         else:
-            raise FittingException("model name is invalid")
+            raise FittingException("Model name is invalid")
         return loss
 
     @property
     def MQObj(self) -> MQObjective:
-        """
-        Get the MQObjective instance.
-        Returns:
-            MQObjective: The MQObjective instance.
-        """
+        """Get the MQObjective instance."""
         return self._MQObj
 
     @property
     def study(self) -> optuna.Study:
-        """
-        Get the Optuna study instance.
-        Returns:
-            optuna.Study: The Optuna study instance.
-        """
+        """Get the Optuna study instance."""
         return getattr(self, "_study", None)
 
     @property
-    def best_params(self) -> Dict[str, Any]:
-        """
-        Get the best hyperparameters found by the optimization process.
-        Returns:
-            Dict[str, Any]: The best hyperparameters.
-        """
+    def best_params(self) -> ParamsLike:
+        """Get the best hyperparameters found by the optimization process."""
         self.__is_optimized()
         return {
             "params": self._study.best_params,

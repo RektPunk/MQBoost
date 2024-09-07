@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, List, Union
+from typing import Callable
 
 import lightgbm as lgb
 import numpy as np
@@ -23,11 +23,12 @@ class BaseEnum(Enum):
 
 
 # Type
-XdataLike = Union[pd.DataFrame, pd.Series, np.ndarray]
-YdataLike = Union[pd.Series, np.ndarray]
-AlphaLike = Union[List[float], float]
-ModelLike = Union[lgb.basic.Booster, xgb.Booster]
-DtrainLike = Union[lgb.basic.Dataset, xgb.DMatrix]
+XdataLike = pd.DataFrame | pd.Series | np.ndarray
+YdataLike = pd.Series | np.ndarray
+AlphaLike = list[float] | float
+ModelLike = lgb.basic.Booster | xgb.Booster
+DtrainLike = lgb.basic.Dataset | xgb.DMatrix
+ParamsLike = dict[str, float | int | str | bool]
 
 
 # Name
@@ -59,7 +60,7 @@ def _lgb_predict_dtype(data: XdataLike):
     return data
 
 
-FUNC_TYPE: Dict[ModelName, Dict[TypeName, Callable]] = {
+FUNC_TYPE: dict[ModelName, dict[TypeName, Callable]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
         TypeName.predict_dtype: _lgb_predict_dtype,

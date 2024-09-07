@@ -1,25 +1,30 @@
-from typing import Any, Dict
-
 import pandas as pd
 
-from mqboost.base import FUNC_TYPE, ModelName, MQStr, TypeName, ValidationException
+from mqboost.base import (
+    FUNC_TYPE,
+    ModelName,
+    MQStr,
+    ParamsLike,
+    TypeName,
+    ValidationException,
+)
 
 
 def set_monotone_constraints(
-    params: Dict[str, Any],
+    params: ParamsLike,
     columns: pd.Index,
     model_name: ModelName,
-) -> Dict[str, Any]:
+) -> ParamsLike:
     """
     Set monotone constraints in params
     Args:
-        params (Dict[str, Any])
+        params (ParamsLike)
         columns (pd.Index)
         model_name (ModelName)
     Raises:
         ValidationException: when "objective" is in params.keys()
     Returns:
-        Dict[str, Any]
+        ParamsLike
     """
     constraints_fucs = FUNC_TYPE.get(model_name).get(TypeName.constraints_type)
     if MQStr.obj.value in params:
