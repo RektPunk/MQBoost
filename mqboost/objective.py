@@ -4,7 +4,7 @@ from typing import Any, Callable
 import numpy as np
 
 from mqboost.base import DtrainLike, ModelName, ObjectiveName
-from mqboost.utils import delta_validate
+from mqboost.utils import delta_validate, epsilon_validate
 
 CHECK_LOSS: str = "check_loss"
 
@@ -168,9 +168,10 @@ class MQObjective:
         if objective == ObjectiveName.check:
             self._fobj = partial(check_loss_grad_hess, alphas=alphas)
         elif objective == ObjectiveName.huber:
-            _delta = delta_validate(delta=delta)
-            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=_delta)
+            delta_validate(delta=delta)
+            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
         elif objective == ObjectiveName.approx:
+            epsilon_validate(epsilon=epsilon)
             self._fobj = partial(approx_loss_grad_hess, alphas=alphas, epsilon=epsilon)
 
         if model == ModelName.lightgbm:
