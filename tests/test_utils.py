@@ -142,8 +142,7 @@ def test_prepare_y_with_series():
 # Test for delta_validate
 def test_delta_validate_valid_delta():
     delta = 0.04
-    result = delta_validate(delta)
-    assert result == 0.04
+    assert delta_validate(delta) is None
 
 
 def test_delta_validate_invalid_type():
@@ -159,8 +158,7 @@ def test_delta_validate_negative_delta():
 def test_delta_validate_exceeds_upper_bound():
     delta = 0.06
     with pytest.warns(UserWarning, match="Delta should be 0.05 or less."):
-        result = delta_validate(delta)
-    assert result == 0.06
+        delta_validate(delta)
 
 
 # Test for params validate

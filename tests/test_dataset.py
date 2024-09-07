@@ -78,6 +78,10 @@ def test_mqdataset_train_predict_dtype():
     assert dataset.train_dtype == dataset._train_dtype
     assert dataset.predict_dtype == dataset._predict_dtype
 
+    dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
+    assert dataset.train_dtype == dataset._train_dtype
+    assert dataset.predict_dtype == dataset._predict_dtype
+
 
 def test_mqdataset_columns_property():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
@@ -91,7 +95,7 @@ def test_mqdataset_columns_property():
     ]
 
 
-def test_mqdataset_dtrain():
+def test_mqdataset_dtype_lgb():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]
@@ -100,13 +104,20 @@ def test_mqdataset_dtrain():
     )
 
     dtrain = dataset.dtrain
-    assert isinstance(dtrain, dataset.train_dtype)
-
-
-def test_mqdataset_dpredict():
-    data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
-    alphas = [0.1, 0.2]
-    dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
-
     dpredict = dataset.dpredict
+    assert isinstance(dtrain, dataset.train_dtype)
+    assert isinstance(dpredict, pd.DataFrame)
+
+
+def test_mqdataset_dtype_xgb():
+    data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
+    label = pd.Series([1, 2, 3])
+    alphas = [0.1, 0.2]
+    dataset = MQDataset(
+        alphas=alphas, data=data, label=label, model=ModelName.xgboost.value
+    )
+
+    dtrain = dataset.dtrain
+    dpredict = dataset.dpredict
+    assert isinstance(dtrain, dataset.train_dtype)
     assert isinstance(dpredict, dataset.predict_dtype)

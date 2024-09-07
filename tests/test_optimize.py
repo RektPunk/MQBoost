@@ -11,17 +11,17 @@ from mqboost.objective import MQObjective
 from mqboost.optimize import MQOptimizer
 
 # Mocking lightgbm and xgboost to avoid actual model training during tests
-with patch.dict(
-    "sys.modules",
-    {
-        "lightgbm": MagicMock(),
-        "xgboost": MagicMock(),
-        "lightgbm.train": MagicMock(),
-        "xgboost.train": MagicMock(),
-    },
-):
-    import lightgbm as lgb
-    import xgboost as xgb
+# with patch.dict(
+#     "sys.modules",
+#     {
+#         "lightgbm": MagicMock(),
+#         "xgboost": MagicMock(),
+#         "lightgbm.train": MagicMock(),
+#         "xgboost.train": MagicMock(),
+#     },
+# ):
+#     import lightgbm as lgb
+#     import xgboost as xgb
 
 
 # Fixtures for test data
