@@ -75,11 +75,6 @@ class MQDataset:
         return self._predict_dtype
 
     @property
-    def model(self) -> ModelName:
-        """Get the model type."""
-        return self._model
-
-    @property
     def columns(self) -> pd.Index:
         """Get the column names of the input features."""
         return self._columns
