@@ -12,9 +12,8 @@ from mqboost.objective import (
     huber_loss_grad_hess,
 )
 
+
 # Test data and helper functions
-
-
 @pytest.fixture
 def dummy_data():
     """Fixture to generate dummy data for training and predictions."""

@@ -15,7 +15,6 @@ def test_mqdataset_initialization_with_lightgbm():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2, 0.3]
-
     dataset = MQDataset(
         alphas=alphas, data=data, label=label, model=ModelName.lightgbm.value
     )
@@ -33,7 +32,6 @@ def test_mqdataset_initialization_with_xgboost():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]
-
     dataset = MQDataset(
         alphas=alphas, data=data, label=label, model=ModelName.xgboost.value
     )
@@ -56,7 +54,6 @@ def test_mqdataset_initialization_with_invalid_alpha():
 def test_mqdataset_initialization_without_label():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     alphas = [0.1, 0.2]
-
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.lightgbm.value)
 
     assert dataset.nrow == 3
@@ -74,24 +71,12 @@ def test_mqdataset_initialization_without_label():
 
 
 # Test properties
-def test_mqdataset_train_dtype():
+def test_mqdataset_train_predict_dtype():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     alphas = [0.1, 0.2]
-
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.lightgbm.value)
-    assert (
-        dataset.train_dtype == dataset._train_dtype
-    )  # Should be the same as internal function
-
-
-def test_mqdataset_predict_dtype():
-    data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
-    alphas = [0.1, 0.2]
-
-    dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
-    assert (
-        dataset.predict_dtype == dataset._predict_dtype
-    )  # Should be the same as internal function
+    assert dataset.train_dtype == dataset._train_dtype
+    assert dataset.predict_dtype == dataset._predict_dtype
 
 
 def test_mqdataset_columns_property():
@@ -103,31 +88,25 @@ def test_mqdataset_columns_property():
         "feature_1",
         "feature_2",
         "_tau",
-    ]  # Should include '_tau'
+    ]
 
 
 def test_mqdataset_dtrain():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     label = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]
-
     dataset = MQDataset(
         alphas=alphas, data=data, label=label, model=ModelName.lightgbm.value
     )
 
     dtrain = dataset.dtrain
-    assert isinstance(
-        dtrain, dataset.train_dtype
-    )  # Should return appropriate train data type
+    assert isinstance(dtrain, dataset.train_dtype)
 
 
 def test_mqdataset_dpredict():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     alphas = [0.1, 0.2]
-
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
 
     dpredict = dataset.dpredict
-    assert isinstance(
-        dpredict, dataset.predict_dtype
-    )  # Should return appropriate prediction data type
+    assert isinstance(dpredict, dataset.predict_dtype)

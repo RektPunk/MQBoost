@@ -165,13 +165,10 @@ def test_delta_validate_exceeds_upper_bound():
 
 # Test for params validate
 def test_set_params_validate_raises_validation_exception():
-    # Test data with "objective" in params
     params = {
         MQStr.obj.value: "regression",
         MQStr.mono.value: [1, -1],
     }
-
-    # Expect a ValidationException due to the "objective" parameter
     with pytest.raises(
         ValidationException,
         match="The parameter named 'objective' must be excluded in params",
