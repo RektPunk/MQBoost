@@ -26,19 +26,13 @@ def _hess_rho(error: np.ndarray, alpha: float) -> np.ndarray:
 
 
 # Huber loss
-def _error_delta_compare(
-    error: np.ndarray, delta: float
-) -> tuple[np.ndarray, np.ndarray]:
-    """Rerutn two boolean arrays indicating where the errors are smaller or larger than delta."""
-    _abs_error = np.abs(error)
-    return (_abs_error <= delta).astype(int), (_abs_error > delta).astype(int)
-
-
 def _grad_huber(error: np.ndarray, alpha: float, delta: float) -> np.ndarray:
     """Compute the gradient of the huber loss function."""
-    _smaller_delta, _bigger_delta = _error_delta_compare(error=error, delta=delta)
-    _grad = _grad_rho(error=error, alpha=alpha)
+    _abs_error = np.abs(error)
+    _smaller_delta = (_abs_error <= delta).astype(int)
+    _bigger_delta = (_abs_error > delta).astype(int)
     _r = _rho(error=error, alpha=alpha)
+    _grad = _grad_rho(error=error, alpha=alpha)
     return _r * _smaller_delta + _grad * _bigger_delta
 
 
