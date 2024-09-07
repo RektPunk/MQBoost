@@ -5,6 +5,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import xgboost as xgb
+from fastapi.background import P
 from optuna import Trial
 from sklearn.model_selection import train_test_split
 
@@ -19,7 +20,7 @@ from mqboost.base import (
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
-from mqboost.utils import delta_validate
+from mqboost.utils import delta_validate, params_validate
 
 __all__ = ["MQOptimizer"]
 
@@ -179,6 +180,7 @@ class MQOptimizer:
     ) -> float:
         """Objective function for Optuna to minimize."""
         params = get_params_func(trial=trial)
+        params_validate(params=params)
         params = set_monotone_constraints(
             params=params,
             columns=self._dataset.columns,

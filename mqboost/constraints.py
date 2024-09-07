@@ -1,13 +1,6 @@
 import pandas as pd
 
-from mqboost.base import (
-    FUNC_TYPE,
-    ModelName,
-    MQStr,
-    ParamsLike,
-    TypeName,
-    ValidationException,
-)
+from mqboost.base import FUNC_TYPE, ModelName, MQStr, ParamsLike, TypeName
 
 
 def set_monotone_constraints(
@@ -27,10 +20,6 @@ def set_monotone_constraints(
         ParamsLike
     """
     constraints_fucs = FUNC_TYPE.get(model_name).get(TypeName.constraints_type)
-    if MQStr.obj.value in params:
-        raise ValidationException(
-            "The parameter named 'objective' must be excluded in params"
-        )
     _params = params.copy()
     if MQStr.mono.value in _params:
         _monotone_constraints = list(_params[MQStr.mono.value])
