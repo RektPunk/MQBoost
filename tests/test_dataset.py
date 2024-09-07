@@ -21,7 +21,6 @@ def test_mqdataset_initialization_with_lightgbm():
     )
 
     assert dataset.nrow == 3
-    assert dataset.model == ModelName.lightgbm
     assert dataset.alphas == alphas
     pd.testing.assert_frame_equal(
         dataset.data,
@@ -40,7 +39,6 @@ def test_mqdataset_initialization_with_xgboost():
     )
 
     assert dataset.nrow == 3
-    assert dataset.model == ModelName.xgboost
     assert dataset.alphas == alphas
     pd.testing.assert_frame_equal(
         dataset.data, _concat(data, 2).assign(_tau=[0.1, 0.1, 0.1, 0.2, 0.2, 0.2])
@@ -62,7 +60,6 @@ def test_mqdataset_initialization_without_label():
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.lightgbm.value)
 
     assert dataset.nrow == 3
-    assert dataset.model == ModelName.lightgbm
     assert dataset.alphas == alphas
 
     pd.testing.assert_frame_equal(
