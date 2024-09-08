@@ -6,6 +6,7 @@ from mqboost.base import FittingException, ModelName, MQStr, ObjectiveName, Para
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
+from mqboost.utils import params_validate
 
 __all__ = ["MQRegressor"]
 
@@ -46,6 +47,7 @@ class MQRegressor:
         epsilon: float = 1e-5,
     ) -> None:
         """Initialize the MQRegressor."""
+        params_validate(params=params)
         self._params = params
         self._model = ModelName.get(model)
         self._objective = ObjectiveName.get(objective)

@@ -4,7 +4,14 @@ from itertools import chain, repeat
 import numpy as np
 import pandas as pd
 
-from mqboost.base import AlphaLike, ValidationException, XdataLike, YdataLike
+from mqboost.base import (
+    AlphaLike,
+    MQStr,
+    ParamsLike,
+    ValidationException,
+    XdataLike,
+    YdataLike,
+)
 
 
 def alpha_validate(
@@ -49,7 +56,7 @@ def prepare_x(
     _alpha_repeat_count_list = [list(repeat(alpha, len(x))) for alpha in alphas]
     _alpha_repeat_list = list(chain.from_iterable(_alpha_repeat_count_list))
 
-    _repeated_x = pd.concat([x] * len(alphas), axis=0)
+    _repeated_x = pd.concat([x] * len(alphas), axis=0).reset_index(drop=True)
     _repeated_x = _repeated_x.assign(
         _tau=_alpha_repeat_list,
     )
@@ -64,7 +71,7 @@ def prepare_y(
     return np.concatenate(list(repeat(y, len(alphas))))
 
 
-def delta_validate(delta: float) -> float:
+def delta_validate(delta: float) -> None:
     """Validates the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
     _delta_upper_bound: float = 0.05
 
@@ -77,4 +84,18 @@ def delta_validate(delta: float) -> float:
     if delta > _delta_upper_bound:
         warnings.warn("Delta should be 0.05 or less.")
 
-    return delta
+
+def epsilon_validate(epsilon: float) -> None:
+    if not isinstance(epsilon, float):
+        raise ValidationException("Epsilon is not float type")
+
+    if epsilon <= 0:
+        raise ValidationException("Epsilon must be positive")
+
+
+def params_validate(params: ParamsLike) -> None:
+    """Validates the model parameter ensuring its key dosen't contain 'objective'."""
+    if MQStr.obj.value in params:
+        raise ValidationException(
+            "The parameter named 'objective' must be excluded in params"
+        )
