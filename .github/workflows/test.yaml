@@ -21,7 +21,7 @@ jobs:
       uses: snok/install-poetry@v1
 
     - name: Install dependencies
-      run: poetry install --no-root --no-interaction --with dev
+      run: poetry install --no-interaction --with dev
 
     - name: Run tests
       run: poetry run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=app tests/ | tee pytest-coverage.txt
