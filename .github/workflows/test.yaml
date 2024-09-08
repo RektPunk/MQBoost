@@ -1,8 +1,8 @@
 name: Tests
 
-on: push
-  # pull_request:
-  #   types: [opened, reopened, ready_for_review, review_requested]
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, review_requested]
 
 jobs:
   run-pytest:
