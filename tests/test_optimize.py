@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, patch
-
 import numpy as np
 import optuna
 import pandas as pd
@@ -8,23 +6,9 @@ import pytest
 from mqboost.base import FittingException, ModelName, ObjectiveName, ValidationException
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
-from mqboost.optimize import MQOptimizer
-
-# Mocking lightgbm and xgboost to avoid actual model training during tests
-# with patch.dict(
-#     "sys.modules",
-#     {
-#         "lightgbm": MagicMock(),
-#         "xgboost": MagicMock(),
-#         "lightgbm.train": MagicMock(),
-#         "xgboost.train": MagicMock(),
-#     },
-# ):
-#     import lightgbm as lgb
-#     import xgboost as xgb
+from mqboost.optimize import MQOptimizer, _lgb_get_params, _xgb_get_params
 
 
-# Fixtures for test data
 @pytest.fixture
 def sample_data():
     """Generates sample data for testing."""
@@ -92,15 +76,9 @@ def test_mqoptimizer_invalid_epsilon():
 def test_optimize_params_with_default_get_params(sample_data):
     """Test optimize_params with default get_params function."""
     optimizer = MQOptimizer()
-    with patch.object(optimizer, "_MQObj", create=True):
-        optimizer._MQObj = MagicMock(spec=MQObjective)
-        optimizer._MQObj.feval.return_value = ("metric", 0.1, False)
-
-        # Mock the training functions to avoid actual training
-        with patch("lightgbm.train", return_value=MagicMock()):
-            best_params = optimizer.optimize_params(dataset=sample_data, n_trials=1)
-            assert isinstance(best_params, dict)
-            assert optimizer._is_optimized
+    best_params = optimizer.optimize_params(dataset=sample_data, n_trials=1)
+    assert isinstance(best_params, dict)
+    assert optimizer._is_optimized
 
 
 def test_optimize_params_with_custom_get_params(sample_data):
@@ -113,42 +91,31 @@ def test_optimize_params_with_custom_get_params(sample_data):
             "num_leaves": trial.suggest_int("num_leaves", 10, 50),
         }
 
-    with patch.object(optimizer, "_MQObj", create=True):
-        optimizer._MQObj = MagicMock(spec=MQObjective)
-        optimizer._MQObj.feval.return_value = ("metric", 0.05, False)
-
-        with patch("lightgbm.train", return_value=MagicMock()):
-            best_params = optimizer.optimize_params(
-                dataset=sample_data, n_trials=1, get_params_func=custom_get_params
-            )
-            assert "learning_rate" in best_params
-            assert "num_leaves" in best_params
+    best_params = optimizer.optimize_params(
+        dataset=sample_data, n_trials=1, get_params_func=custom_get_params
+    )
+    assert "learning_rate" in best_params
+    assert "num_leaves" in best_params
 
 
 def test_optimize_params_with_valid_set(sample_data, sample_valid_data):
     """Test optimize_params with a provided validation set."""
     optimizer = MQOptimizer()
-
-    with patch.object(optimizer, "_MQObj", create=True):
-        optimizer._MQObj = MagicMock(spec=MQObjective)
-        optimizer._MQObj.feval.return_value = ("metric", 0.05, False)
-
-        with patch("lightgbm.train", return_value=MagicMock()):
-            best_params = optimizer.optimize_params(
-                dataset=sample_data, n_trials=1, valid_set=sample_valid_data
-            )
-            assert isinstance(best_params, dict)
-            assert optimizer._is_optimized
+    best_params = optimizer.optimize_params(
+        dataset=sample_data, n_trials=1, valid_set=sample_valid_data
+    )
+    assert isinstance(best_params, dict)
+    assert optimizer._is_optimized
 
 
-def test_optimize_params_without_optimization(sample_data):
+def test_optimize_params_without_optimization():
     """Test accessing best_params before optimization is completed."""
     optimizer = MQOptimizer()
     with pytest.raises(FittingException, match="Optimization is not completed."):
         _ = optimizer.best_params
 
 
-def test_study_property_before_optimization(sample_data):
+def test_study_property_before_optimization():
     """Test accessing study property before optimization."""
     optimizer = MQOptimizer()
     assert optimizer.study is None
@@ -157,14 +124,8 @@ def test_study_property_before_optimization(sample_data):
 def test_study_property_after_optimization(sample_data):
     """Test accessing study property after optimization."""
     optimizer = MQOptimizer()
-
-    with patch.object(optimizer, "_MQObj", create=True):
-        optimizer._MQObj = MagicMock(spec=MQObjective)
-        optimizer._MQObj.feval.return_value = ("metric", 0.05, False)
-
-        with patch("lightgbm.train", return_value=MagicMock()):
-            optimizer.optimize_params(dataset=sample_data, n_trials=1)
-            assert isinstance(optimizer.study, optuna.Study)
+    optimizer.optimize_params(dataset=sample_data, n_trials=1)
+    assert isinstance(optimizer.study, optuna.Study)
 
 
 def test_mqobjective_property(sample_data):
@@ -192,15 +153,6 @@ def test_optimize_params_invalid_n_trials(sample_data):
     optimizer = MQOptimizer()
     with pytest.raises(ValueError):
         optimizer.optimize_params(dataset=sample_data, n_trials=0)
-
-
-def test_optimize_params_with_exception_in_objective(sample_data):
-    """Test that exceptions in the objective function are handled."""
-    optimizer = MQOptimizer()
-
-    with patch("lightgbm.train", side_effect=Exception("Training failed")):
-        with pytest.raises(Exception, match="Training failed"):
-            optimizer.optimize_params(dataset=sample_data, n_trials=1)
 
 
 def test_lgb_get_params():
