@@ -5,10 +5,20 @@
   <a href="https://github.com/RektPunk/MQBoost/releases/latest">
     <img alt="release" src="https://img.shields.io/github/v/release/RektPunk/mqboost.svg">
   </a>
-<!--   <a href="LICENSE">
-    <img alt="license" src="https://img.shields.io/badge/license-MIT-indigo.sv">
-  </a> -->
+  <a href="https://pypi.org/project/MQBoost">
+    <img alt="Pythonv" src="https://img.shields.io/pypi/pyversions/MQBoost.svg?logo=python&logoColor=white">
+  </a>
+  <a href="https://github.com/RektPunk/MQBoost/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/RektPunk/MQboost.svg">
+  </a>
+  <a href="https://github.com/RektPunk/MQBoost/actions/workflows/lint.yaml">
+    <img alt="Lint" src="https://github.com/RektPunk/MQBoost/actions/workflows/lint.yaml/badge.svg?branch=main">
+  </a>
+  <a href="https://github.com/RektPunk/MQBoost/actions/workflows/test.yaml">
+    <img alt="Test" src="https://github.com/RektPunk/MQBoost/actions/workflows/test.yaml/badge.svg?branch=main">
+  </a>
 </p>
+
 
 **MQBoost** introduces an advanced model for estimating multiple quantiles while ensuring the non-crossing condition (monotone quantile condition). This model harnesses the capabilities of both [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks.
 
