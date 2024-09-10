@@ -39,17 +39,20 @@ def alpha_validate(
     return alphas
 
 
+def to_dataframe(x: XdataLike) -> pd.DataFrame:
+    if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
+        x = pd.DataFrame(x)
+    return x
+
+
 def prepare_x(
-    x: XdataLike,
+    x: pd.DataFrame,
     alphas: list[float],
 ) -> pd.DataFrame:
     """Prepares and returns a stacked DataFrame of features repeated for each alpha, with an additional column indicating the alpha value.
     Raises:
         ValidationException: If the input data contains a column named '_tau'.
     """
-    if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
-        x = pd.DataFrame(x)
-
     if "_tau" in x.columns:
         raise ValidationException("Column name '_tau' is not allowed.")
 
