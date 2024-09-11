@@ -9,6 +9,7 @@ from mqboost.utils import (
     params_validate,
     prepare_x,
     prepare_y,
+    to_dataframe,
 )
 
 
@@ -47,6 +48,38 @@ def test_alpha_validate_raises_on_empty_alphas():
         alpha_validate([])
 
 
+# Test for to_dataframe
+def test_to_dataframe_with_dataframe():
+    x = pd.DataFrame(
+        {
+            "feature_1": [1, 2],
+            "feature_2": [3, 4],
+        }
+    )
+    pd.testing.assert_frame_equal(x, to_dataframe(x))
+
+
+def test_to_dataframe_with_series():
+    x = pd.Series([1, 2, 3])
+    expected = pd.DataFrame(
+        {
+            0: [1, 2, 3],
+        }
+    )
+    pd.testing.assert_frame_equal(expected, to_dataframe(x))
+
+
+def test_to_dataframe_with_array():
+    x = np.array([[1, 2], [3, 4]])
+    expected = pd.DataFrame(
+        {
+            0: [1, 3],
+            1: [2, 4],
+        }
+    )
+    pd.testing.assert_frame_equal(expected, to_dataframe(x))
+
+
 # Test for prepare_x
 def test_prepare_x_with_dataframe():
     x = pd.DataFrame(
@@ -57,7 +90,6 @@ def test_prepare_x_with_dataframe():
     )
     alphas = [0.1, 0.2]
     result = prepare_x(x, alphas)
-
     expected = pd.DataFrame(
         {
             "feature_1": [1, 2, 1, 2],
@@ -72,8 +104,7 @@ def test_prepare_x_with_dataframe():
 def test_prepare_x_with_series():
     x = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]
-    result = prepare_x(x, alphas)
-
+    result = prepare_x(to_dataframe(x), alphas)
     expected = pd.DataFrame(
         {
             0: [1, 2, 3, 1, 2, 3],
@@ -87,8 +118,7 @@ def test_prepare_x_with_series():
 def test_prepare_x_with_array():
     x = np.array([[1, 2], [3, 4]])
     alphas = [0.1, 0.2]
-    result = prepare_x(x, alphas)
-
+    result = prepare_x(to_dataframe(x), alphas)
     expected = pd.DataFrame(
         {
             0: [1, 3, 1, 3],

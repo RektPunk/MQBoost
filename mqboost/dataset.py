@@ -12,7 +12,8 @@ from mqboost.base import (
     XdataLike,
     YdataLike,
 )
-from mqboost.utils import alpha_validate, prepare_x, prepare_y
+from mqboost.encoder import MQLabelEncoder
+from mqboost.utils import alpha_validate, prepare_x, prepare_y, to_dataframe
 
 
 class MQDataset:
@@ -56,9 +57,16 @@ class MQDataset:
         self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
 
-        self._data = prepare_x(x=data, alphas=self._alphas)
-        self._columns = self._data.columns
+        _data = to_dataframe(data)
+        self.encoders: dict[str, MQLabelEncoder] = {}
+        for col in _data.columns:
+            if _data[col].dtype == "object":
+                _encoder = MQLabelEncoder()
+                _data[col] = _encoder.fit_transform(_data[col])
+                self.encoders.update({col: _encoder})
 
+        self._data = prepare_x(x=_data, alphas=self._alphas)
+        self._columns = self._data.columns
         if label is not None:
             self._label = prepare_y(y=label, alphas=self._alphas)
             self._is_none_label = False
