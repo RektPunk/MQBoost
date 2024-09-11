@@ -48,13 +48,13 @@ def test_func_type_for_lgb():
         FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](np.array([1, 2, 3])),
         np.ndarray,
     )
-    assert FUNC_TYPE[ModelName.lightgbm][TypeName.constraints_type] == list
+    assert isinstance(FUNC_TYPE[ModelName.lightgbm][TypeName.constraints_type](), list)
 
 
 def test_func_type_for_xgb():
     assert FUNC_TYPE[ModelName.xgboost][TypeName.train_dtype] == xgb.DMatrix
     assert FUNC_TYPE[ModelName.xgboost][TypeName.predict_dtype] == xgb.DMatrix
-    assert FUNC_TYPE[ModelName.xgboost][TypeName.constraints_type] == tuple
+    assert isinstance(FUNC_TYPE[ModelName.xgboost][TypeName.constraints_type](), tuple)
 
 
 # Test _lgb_predict_dtype
