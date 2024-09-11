@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mqboost.base import XdataLike, YdataLike
 from mqboost.encoder import MQLabelEncoder
 
 
