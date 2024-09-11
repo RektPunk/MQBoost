@@ -49,12 +49,6 @@ class TypeName(BaseEnum):
     constraints_type: str = "constraints_type"
 
 
-class MQStr(BaseEnum):
-    mono: str = "monotone_constraints"
-    obj: str = "objective"
-    valid: str = "valid"
-
-
 # Functions
 def _lgb_predict_dtype(data: XdataLike):
     return data

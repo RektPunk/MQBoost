@@ -6,7 +6,6 @@ import pandas as pd
 
 from mqboost.base import (
     AlphaLike,
-    MQStr,
     ParamsLike,
     ValidationException,
     XdataLike,
@@ -98,7 +97,7 @@ def epsilon_validate(epsilon: float) -> None:
 
 def params_validate(params: ParamsLike) -> None:
     """Validates the model parameter ensuring its key dosen't contain 'objective'."""
-    if MQStr.obj.value in params:
+    if "objective" in params:
         raise ValidationException(
             "The parameter named 'objective' must be excluded in params"
         )

@@ -12,7 +12,6 @@ from mqboost.base import (
     DtrainLike,
     FittingException,
     ModelName,
-    MQStr,
     ObjectiveName,
     ParamsLike,
 )
@@ -200,7 +199,7 @@ class MQOptimizer:
             model_params = dict(
                 params=params,
                 dtrain=dtrain,
-                evals=[(dvalid, MQStr.valid.value)],
+                evals=[(dvalid, "valid")],
             )
             _gbm = xgb.train(**model_params)
             _preds = _gbm.predict(data=deval)

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mqboost.base import MQStr, ValidationException
+from mqboost.base import ValidationException
 from mqboost.utils import (
     alpha_validate,
     delta_validate,
@@ -194,8 +194,8 @@ def test_delta_validate_exceeds_upper_bound():
 # Test for params validate
 def test_set_params_validate_raises_validation_exception():
     params = {
-        MQStr.obj.value: "regression",
-        MQStr.mono.value: [1, -1],
+        "objective": "regression",
+        "monotone_constraints": [1, -1],
     }
     with pytest.raises(
         ValidationException,

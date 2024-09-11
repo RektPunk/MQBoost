@@ -2,7 +2,7 @@ import lightgbm as lgb
 import numpy as np
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, MQStr, ObjectiveName, ParamsLike
+from mqboost.base import FittingException, ModelName, ObjectiveName, ParamsLike
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
@@ -84,7 +84,7 @@ class MQRegressor:
             epsilon=self._epsilon,
         )
         if self.__is_lgb:
-            params.update({MQStr.obj.value: self._MQObj.fobj})
+            params.update({"objective": self._MQObj.fobj})
             self.model = lgb.train(
                 train_set=dataset.dtrain,
                 params=params,
