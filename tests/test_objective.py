@@ -49,7 +49,7 @@ def test_mqobjective_check_loss_initialization():
 
 def test_mqobjective_huber_loss_initialization():
     """Test MQObjective initialization with huber loss."""
-    delta = 0.1
+    delta = 0.05
     mq_objective = MQObjective(
         alphas=alphas,
         objective=ObjectiveName.huber,
