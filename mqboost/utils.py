@@ -88,6 +88,7 @@ def delta_validate(delta: float) -> None:
 
 
 def epsilon_validate(epsilon: float) -> None:
+    """Validate epsilon parameter ensuring it is positive float"""
     if not isinstance(epsilon, float):
         raise ValidationException("Epsilon is not float type")
 
