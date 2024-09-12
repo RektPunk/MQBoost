@@ -1,6 +1,6 @@
 import pandas as pd
 
-from mqboost.base import FUNC_TYPE, ModelName, MQStr, ParamsLike, TypeName
+from mqboost.base import FUNC_TYPE, ModelName, ParamsLike, TypeName
 
 
 def set_monotone_constraints(
@@ -19,16 +19,18 @@ def set_monotone_constraints(
     Returns:
         ParamsLike
     """
+    MONOTONE_CONSTRAINTS: str = "monotone_constraints"
+
     constraints_fucs = FUNC_TYPE.get(model_name).get(TypeName.constraints_type)
     _params = params.copy()
-    if MQStr.mono.value in _params:
-        _monotone_constraints = list(_params[MQStr.mono.value])
+    if MONOTONE_CONSTRAINTS in _params:
+        _monotone_constraints = list(_params[MONOTONE_CONSTRAINTS])
         _monotone_constraints.append(1)
-        _params.update({MQStr.mono.value: constraints_fucs(_monotone_constraints)})
+        _params.update({MONOTONE_CONSTRAINTS: constraints_fucs(_monotone_constraints)})
     else:
         _params.update(
             {
-                MQStr.mono.value: constraints_fucs(
+                MONOTONE_CONSTRAINTS: constraints_fucs(
                     [1 if "_tau" == col else 0 for col in columns]
                 )
             }
