@@ -7,6 +7,11 @@ from mqboost.base import DtrainLike, ModelName, ObjectiveName
 from mqboost.utils import delta_validate, epsilon_validate
 
 CHECK_LOSS: str = "check_loss"
+GradFnLike = Callable[[Any], np.ndarray]
+HessFnLike = Callable[[Any], np.ndarray]
+CallGradHessLike = Callable[
+    [np.ndarray, DtrainLike, list[float], Any], tuple[np.ndarray, np.ndarray]
+]
 
 
 # check loss
@@ -42,13 +47,13 @@ def _hess_huber(error: np.ndarray, **kwargs) -> np.ndarray:
 
 
 # Approx loss (MM loss)
-def _grad_approx(error: np.ndarray, alpha: float, epsilon: float):
+def _grad_approx(error: np.ndarray, alpha: float, epsilon: float) -> np.ndarray:
     """Compute the gradient of the approx of the smooth approximated check loss function."""
     _grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
     return _grad
 
 
-def _hess_approx(error: np.ndarray, epsilon: float, **kwargs):
+def _hess_approx(error: np.ndarray, epsilon: float, **kwargs) -> np.ndarray:
     """Compute the Hessian of the approx of the smooth approximated check loss function."""
     _hess = 1 / (2 * (epsilon + np.abs(error)))
     return _hess
@@ -64,40 +69,38 @@ def _train_pred_reshape(
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
-def _compute_grads_hess(
-    y_pred: np.ndarray,
-    dtrain: DtrainLike,
-    alphas: list[float],
-    grad_fn: Callable[[np.ndarray, float, Any], np.ndarray],
-    hess_fn: Callable[[np.ndarray, float, Any], np.ndarray],
-    **kwargs: dict[str, float],
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute gradients and hessians for the given loss function."""
-    _len_alpha = len(alphas)
-    _y_train, _y_pred = _train_pred_reshape(
-        y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
-    )
-    grads = []
-    hess = []
-    for alpha_inx in range(len(alphas)):
-        _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-        _grad = grad_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
-        _hess = hess_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
-        grads.append(_grad)
-        hess.append(_hess)
+# Compute gradient hessian logic
+def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> CallGradHessLike:
+    """Return computing gradient hessian function."""
 
-    return np.concatenate(grads), np.concatenate(hess)
+    def _compute_grads_hess(
+        y_pred: np.ndarray,
+        dtrain: DtrainLike,
+        alphas: list[float],
+        **kwargs: Any,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute gradients and hessians for the given gradient and hessian function."""
+        _len_alpha = len(alphas)
+        _y_train, _y_pred = _train_pred_reshape(
+            y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
+        )
+        grads = []
+        hess = []
+        for alpha_inx in range(len(alphas)):
+            _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
+            _grad = grad_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
+            _hess = hess_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
+            grads.append(_grad)
+            hess.append(_hess)
+
+        return np.concatenate(grads), np.concatenate(hess)
+
+    return _compute_grads_hess
 
 
-check_loss_grad_hess: Callable = partial(
-    _compute_grads_hess, grad_fn=_grad_rho, hess_fn=_hess_rho
-)
-huber_loss_grad_hess: Callable = partial(
-    _compute_grads_hess, grad_fn=_grad_huber, hess_fn=_hess_huber
-)
-approx_loss_grad_hess: Callable = partial(
-    _compute_grads_hess, grad_fn=_grad_approx, hess_fn=_hess_approx
-)
+check_loss_grad_hess = compute_grad_hess(grad_fn=_grad_rho, hess_fn=_hess_rho)
+huber_loss_grad_hess = compute_grad_hess(grad_fn=_grad_huber, hess_fn=_hess_huber)
+approx_loss_grad_hess = compute_grad_hess(grad_fn=_grad_approx, hess_fn=_hess_approx)
 
 
 def _eval_check_loss(
