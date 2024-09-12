@@ -114,16 +114,12 @@ class MQOptimizer:
             n_trials (int): The number of trials for the hyperparameter optimization.
             get_params_func (Callable, optional): A custom function to get the parameters for the model.
                 For example,
-                    def get_params(trial: Trial):
+                    def get_params(trial: Trial) -> dict[str, Any]:
                         return {
                             "learning_rate": trial.suggest_float("learning_rate", 1e-2, 1.0),
                             "max_depth": trial.suggest_int("max_depth", 1, 10),
                             "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0),
                             "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0),
-                            "num_leaves": trial.suggest_int("num_leaves", 2, 256),
-                            "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
-                            "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
-                            "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
                         }
             valid_set (MQDataset, optional): The validation dataset. Defaults to None.
         Returns:

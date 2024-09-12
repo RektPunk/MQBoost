@@ -66,10 +66,10 @@ class MQRegressor:
             eval_set (Optional[MQDataset]):
                 The validation dataset. If None, the dataset is used for evaluation.
         """
-        if eval_set is None:
-            _eval_set = dataset.dtrain
-        else:
+        if eval_set:
             _eval_set = eval_set.dtrain
+        else:
+            _eval_set = dataset.dtrain
 
         params = set_monotone_constraints(
             params=self._params,

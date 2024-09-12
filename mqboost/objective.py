@@ -16,23 +16,19 @@ CallGradHessLike = Callable[
 
 # check loss
 def _grad_rho(error: np.ndarray, alpha: float) -> np.ndarray:
-    """Compute the gradient of the check loss function."""
     return (error < 0).astype(int) - alpha
 
 
 def _rho(error: np.ndarray, alpha: float) -> np.ndarray:
-    """Compute the check loss function."""
     return -error * _grad_rho(error=error, alpha=alpha)
 
 
 def _hess_rho(error: np.ndarray, **kwargs) -> np.ndarray:
-    """Compute the Hessian of the check."""
     return np.ones_like(error)
 
 
 # Huber loss
 def _grad_huber(error: np.ndarray, alpha: float, delta: float) -> np.ndarray:
-    """Compute the gradient of the huber loss function."""
     _abs_error = np.abs(error)
     _smaller_delta = (_abs_error <= delta).astype(int)
     _bigger_delta = (_abs_error > delta).astype(int)
@@ -42,19 +38,16 @@ def _grad_huber(error: np.ndarray, alpha: float, delta: float) -> np.ndarray:
 
 
 def _hess_huber(error: np.ndarray, **kwargs) -> np.ndarray:
-    """Compute the Hessian of the huber loss function."""
     return np.ones_like(error)
 
 
 # Approx loss (MM loss)
 def _grad_approx(error: np.ndarray, alpha: float, epsilon: float) -> np.ndarray:
-    """Compute the gradient of the approx of the smooth approximated check loss function."""
     _grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
     return _grad
 
 
 def _hess_approx(error: np.ndarray, epsilon: float, **kwargs) -> np.ndarray:
-    """Compute the Hessian of the approx of the smooth approximated check loss function."""
     _hess = 1 / (2 * (epsilon + np.abs(error)))
     return _hess
 
@@ -79,7 +72,6 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> CallGradHessL
         alphas: list[float],
         **kwargs: Any,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Compute gradients and hessians for the given gradient and hessian function."""
         _len_alpha = len(alphas)
         _y_train, _y_pred = _train_pred_reshape(
             y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
@@ -98,6 +90,7 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> CallGradHessL
     return _compute_grads_hess
 
 
+# Gradient and Hessian functions
 check_loss_grad_hess = compute_grad_hess(grad_fn=_grad_rho, hess_fn=_hess_rho)
 huber_loss_grad_hess = compute_grad_hess(grad_fn=_grad_huber, hess_fn=_hess_huber)
 approx_loss_grad_hess = compute_grad_hess(grad_fn=_grad_approx, hess_fn=_hess_approx)
@@ -118,7 +111,6 @@ def _eval_check_loss(
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
         _loss = _rho(error=_err_for_alpha, alpha=alphas[alpha_inx])
         loss = loss + np.mean(_loss)
-
     loss = loss / _len_alpha
     return loss
 
@@ -128,7 +120,6 @@ def _xgb_eval_loss(
     dtrain: DtrainLike,
     alphas: list[float],
 ) -> tuple[str, float]:
-    """Evaluation function for XGBoost."""
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss
 
@@ -138,9 +129,34 @@ def _lgb_eval_loss(
     dtrain: DtrainLike,
     alphas: list[float],
 ) -> tuple[str, float, bool]:
-    """Evaluation function for LightGBM."""
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     return CHECK_LOSS, loss, False
+
+
+def validate_parameters(objective: ObjectiveName, delta: float, epsilon: float):
+    if objective == ObjectiveName.huber:
+        delta_validate(delta=delta)
+    elif objective == ObjectiveName.approx:
+        epsilon_validate(epsilon=epsilon)
+
+
+def get_fobj_function(objective, alphas, delta: float, epsilon: float):
+    objective_mapping = {
+        ObjectiveName.check: partial(check_loss_grad_hess, alphas=alphas),
+        ObjectiveName.huber: partial(huber_loss_grad_hess, alphas=alphas, delta=delta),
+        ObjectiveName.approx: partial(
+            approx_loss_grad_hess, alphas=alphas, epsilon=epsilon
+        ),
+    }
+    return objective_mapping.get(objective)
+
+
+def get_feval_function(model: ModelName, alphas):
+    model_mapping = {
+        ModelName.lightgbm: partial(_lgb_eval_loss, alphas=alphas),
+        ModelName.xgboost: partial(_xgb_eval_loss, alphas=alphas),
+    }
+    return model_mapping.get(model)
 
 
 class MQObjective:
@@ -168,19 +184,11 @@ class MQObjective:
         epsilon: float,
     ) -> None:
         """Initialize the MQObjective."""
-        if objective == ObjectiveName.check:
-            self._fobj = partial(check_loss_grad_hess, alphas=alphas)
-        elif objective == ObjectiveName.huber:
-            delta_validate(delta=delta)
-            self._fobj = partial(huber_loss_grad_hess, alphas=alphas, delta=delta)
-        elif objective == ObjectiveName.approx:
-            epsilon_validate(epsilon=epsilon)
-            self._fobj = partial(approx_loss_grad_hess, alphas=alphas, epsilon=epsilon)
-
-        if model == ModelName.lightgbm:
-            self._feval = partial(_lgb_eval_loss, alphas=alphas)
-        elif model == ModelName.xgboost:
-            self._feval = partial(_xgb_eval_loss, alphas=alphas)
+        validate_parameters(objective=objective, delta=delta, epsilon=epsilon)
+        self._fobj = get_fobj_function(
+            objective=objective, alphas=alphas, delta=delta, epsilon=epsilon
+        )
+        self._feval = get_feval_function(model=model, alphas=alphas)
 
     @property
     def fobj(self) -> Callable:
