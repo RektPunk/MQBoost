@@ -4,6 +4,7 @@ import pytest
 
 from mqboost.base import FittingException, ModelName, ValidationException
 from mqboost.dataset import MQDataset
+from mqboost.encoder import MQLabelEncoder
 
 
 def _concat(df: pd.DataFrame, concat_count: int):
@@ -121,3 +122,71 @@ def test_mqdataset_dtype_xgb():
     dpredict = dataset.dpredict
     assert isinstance(dtrain, dataset.train_dtype)
     assert isinstance(dpredict, dataset.predict_dtype)
+
+
+def test_MQDataset_reference():
+    data = pd.DataFrame(
+        {
+            "col1": ["A", "B", "C"],
+            "col2": [1, 2, 3],
+            "col3": ["2", "3", "1"],
+        }
+    )
+    label = pd.Series([0, 1, 0])
+    alphas = [0.1, 0.2]
+    dataset = MQDataset(data=data, label=label, alphas=alphas)
+
+    assert isinstance(dataset.encoders["col1"], MQLabelEncoder)
+    assert isinstance(dataset.encoders["col3"], MQLabelEncoder)
+    transformed_data = pd.DataFrame(
+        {
+            "col1": [0, 1, 2] * 2,
+            "col2": [1, 2, 3] * 2,
+            "col3": [1, 2, 0] * 2,
+            "_tau": [0.1, 0.1, 0.1, 0.2, 0.2, 0.2],
+        }
+    )
+    pd.testing.assert_frame_equal(dataset.data, transformed_data)
+    new_data = pd.DataFrame(
+        {
+            "col1": ["A", "C", "B"],
+            "col2": [1, 3, 2],
+            "col3": ["X", "Y", "X"],
+        }
+    )
+
+    new_dataset = MQDataset(data=new_data, alphas=alphas, reference=dataset)
+    transformed_new_data = pd.DataFrame(
+        {
+            "col1": [0, 2, 1] * 2,
+            "col2": [1, 3, 2] * 2,
+            "col3": [4, 4, 4] * 2,
+            "_tau": [0.1, 0.1, 0.1, 0.2, 0.2, 0.2],
+        }
+    )
+    print(new_dataset.data)
+    pd.testing.assert_frame_equal(new_dataset.data, transformed_new_data)
+    assert new_dataset.encoders == dataset.encoders
+
+
+def test_MQDataset_reference_with_missing_columns():
+    data = pd.DataFrame(
+        {
+            "col1": ["A", "B", "C"],
+            "col2": [1, 2, 3],
+            "col3": ["2", "3", "1"],
+        }
+    )
+    label = pd.Series([0, 1, 0])
+    alphas = [0.1, 0.2]
+    dataset = MQDataset(data=data, label=label, alphas=alphas)
+
+    new_data = pd.DataFrame(
+        {
+            "col1": ["A", "C"],
+            "col2": [1, 3],  # col3 is missing
+        }
+    )
+
+    with pytest.raises(ValueError):
+        MQDataset(data=new_data, alphas=alphas, reference=dataset)
