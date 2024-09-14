@@ -40,8 +40,10 @@ def alpha_validate(
 
 def to_dataframe(x: XdataLike) -> pd.DataFrame:
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
-        x = pd.DataFrame(x)
-    return x
+        _x = pd.DataFrame(x.copy())
+    else:
+        _x = x.copy()
+    return _x
 
 
 def prepare_x(

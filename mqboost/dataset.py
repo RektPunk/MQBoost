@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import pandas as pd
 
@@ -16,6 +16,11 @@ from mqboost.encoder import MQLabelEncoder
 from mqboost.utils import alpha_validate, prepare_x, prepare_y, to_dataframe
 
 
+def _compare_datasets(data: pd.DataFrame, reference_data: pd.DataFrame) -> None:
+    if data.shape[1] != reference_data.shape[1] - 1:
+        raise ValueError("Number of columns do not match")
+
+
 class MQDataset:
     """
     MQDataset encapsulates the dataset used for training and predicting with the MQRegressor.
@@ -28,6 +33,7 @@ class MQDataset:
         data (pd.DataFrame | pd.Series | np.ndarray): The input features.
         label (pd.Series | np.ndarray): The target labels (if provided).
         model (str): The model type (LightGBM or XGBoost).
+        reference (MQBoost | None): Reference dataset for label encoding.
 
     Property:
         train_dtype: Returns the data type function for training data.
@@ -47,6 +53,7 @@ class MQDataset:
         data: XdataLike,
         label: YdataLike | None = None,
         model: str = ModelName.lightgbm.value,
+        reference: Optional["MQDataset"] = None,
     ) -> None:
         """Initialize the MQDataset."""
         self._model = ModelName.get(model)
@@ -58,12 +65,18 @@ class MQDataset:
         self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
 
         _data = to_dataframe(data)
-        self.encoders: dict[str, MQLabelEncoder] = {}
-        for col in _data.columns:
-            if _data[col].dtype == "object":
-                _encoder = MQLabelEncoder()
-                _data[col] = _encoder.fit_transform(_data[col])
-                self.encoders.update({col: _encoder})
+        if reference is None:
+            self.encoders: dict[str, MQLabelEncoder] = {}
+            for col in _data.columns:
+                if _data[col].dtype == "object":
+                    _encoder = MQLabelEncoder()
+                    _data[col] = _encoder.fit_transform(_data[col])
+                    self.encoders.update({col: _encoder})
+        else:
+            _compare_datasets(_data, reference.data)
+            self.encoders = reference.encoders.copy()
+            for col, _encoder in self.encoders.items():
+                _data[col] = _encoder.transform(_data[col])
 
         self._data = prepare_x(x=_data, alphas=self._alphas)
         self._columns = self._data.columns
