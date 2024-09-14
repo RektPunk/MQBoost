@@ -5,7 +5,9 @@ description = "Monotonic composite quantile gradient boost regressor"
 authors = ["RektPunk <rektpunk@gmail.com>"]
 readme = "README.md"
 repository = "https://github.com/RektPunk/MQBoost"
-
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
