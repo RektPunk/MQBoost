@@ -23,8 +23,12 @@ objective = "check"  # Options: "check", "huber", or "approx"
 
 # Set dataset
 train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
-valid_dataset = MQDataset(data=x_valid, label=y_valid, alphas=alphas, model=model)
-test_dataset = MQDataset(data=x_test, label=y_test, alphas=alphas, model=model)
+valid_dataset = MQDataset(
+    data=x_valid, label=y_valid, alphas=alphas, model=model, reference=train_dataset
+)
+test_dataset = MQDataset(
+    data=x_test, label=y_test, alphas=alphas, model=model, reference=train_dataset
+)
 
 # Initialize the optimizer
 mq_optimizer = MQOptimizer(

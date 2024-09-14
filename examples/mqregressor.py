@@ -40,5 +40,7 @@ train_dataset = MQDataset(data=x, label=y, alphas=alphas, model=model)
 mq_regressor.fit(dataset=train_dataset)
 
 # Predict using the fitted model
-test_dataset = MQDataset(data=x_test, alphas=alphas, model=model)
+test_dataset = MQDataset(
+    data=x_test, alphas=alphas, model=model, reference=train_dataset
+)
 preds_lgb = mq_regressor.predict(test_dataset)
