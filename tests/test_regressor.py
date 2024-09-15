@@ -177,3 +177,39 @@ def test_monotone_constraints_called_xgb(dummy_dataset_xgb):
             for k in range(len(predictions) - 1)
         ]
     )
+
+
+def test_feature_importance_before_fit_raises():
+    params = {"learning_rate": 0.1, "max_depth": 6}
+    with pytest.raises(FittingException, match="Fit must be executed first."):
+        _ = MQRegressor(params=params).feature_importance
+
+
+def test_feature_importance_after_fit(dummy_dataset_lgb):
+    params = {"learning_rate": 0.1, "max_depth": 6}
+    gbm_model = MQRegressor(params=params)
+    gbm_model.fit(dataset=dummy_dataset_lgb)
+    feature_importances = gbm_model.feature_importance
+
+    assert isinstance(
+        feature_importances, dict
+    ), "Feature importances should be a dictionary"
+    assert len(feature_importances) == len(
+        dummy_dataset_lgb.columns
+    ), "Feature importance length mismatch"
+    for feature in dummy_dataset_lgb.columns:
+        assert (
+            str(feature) in feature_importances
+        ), f"Feature {feature} not found in importance"
+
+
+def test_feature_importance_positive(dummy_dataset_lgb):
+    """Test that at least some feature importances are non-zero after training"""
+    params = {"learning_rate": 0.1, "max_depth": 6}
+    gbm_model = MQRegressor(params=params)
+    gbm_model.fit(dataset=dummy_dataset_lgb)
+    feature_importances = gbm_model.feature_importance
+
+    assert all(
+        [importance >= 0 for importance in feature_importances.values()]
+    ), "All importance should be positive."

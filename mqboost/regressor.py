@@ -100,6 +100,7 @@ class MQRegressor:
                 custom_metric=self._MQObj.feval,
                 evals=[(_eval_set, "eval")],
             )
+        self._colnames = dataset.columns.to_list()
         self._fitted = True
 
     def predict(
@@ -121,12 +122,24 @@ class MQRegressor:
     def __predict_available(self) -> None:
         """Check if the model has been fitted before making predictions."""
         if not getattr(self, "_fitted", False):
-            raise FittingException("Fit must be executed before predict")
+            raise FittingException("Fit must be executed first.")
 
     @property
     def MQObj(self) -> MQObjective:
         """Get the MQObjective instance."""
         return self._MQObj
+
+    @property
+    def feature_importance(self) -> dict[str, float]:
+        self.__predict_available()
+        importances = {str(k): 0 for k in self._colnames}
+        if self.__is_lgb:
+            _importance = self.model.feature_importance(importance_type="gain").tolist()
+            importances.update({str(k): v for k, v in zip(self._colnames, _importance)})
+            return importances
+        else:
+            importances.update(self.model.get_score(importance_type="gain"))
+            return importances
 
     @property
     def __is_lgb(self) -> bool:
