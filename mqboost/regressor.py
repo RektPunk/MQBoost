@@ -116,7 +116,7 @@ class MQRegressor:
         """
         self.__predict_available()
         _pred = self.model.predict(data=dataset.dpredict)
-        _pred = _pred.reshape(len(dataset.alphas), dataset.nrow)
+        _pred = _pred.reshape(len(dataset.alphas), dataset.nrow) + dataset.label_mean
         return _pred
 
     def __predict_available(self) -> None:
