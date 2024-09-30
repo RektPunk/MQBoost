@@ -71,6 +71,8 @@ class MQRegressor:
         else:
             _eval_set = dataset.dtrain
 
+        self._label_mean = dataset.label_mean
+
         params = set_monotone_constraints(
             params=self._params,
             columns=dataset.columns,
@@ -115,8 +117,8 @@ class MQRegressor:
             np.ndarray: The predicted quantiles.
         """
         self.__predict_available()
-        _pred = self.model.predict(data=dataset.dpredict)
-        _pred = _pred.reshape(len(dataset.alphas), dataset.nrow) + dataset.label_mean
+        _pred = self.model.predict(data=dataset.dpredict) + self._label_mean
+        _pred = _pred.reshape(len(dataset.alphas), dataset.nrow)
         return _pred
 
     def __predict_available(self) -> None:
