@@ -81,7 +81,8 @@ class MQDataset:
         self._data = prepare_x(x=_data, alphas=self._alphas)
         self._columns = self._data.columns
         if label is not None:
-            self._label = prepare_y(y=label, alphas=self._alphas)
+            self._label_mean = label.mean()
+            self._label = prepare_y(y=label - self._label_mean, alphas=self._alphas)
             self._is_none_label = False
 
     @property
@@ -110,15 +111,20 @@ class MQDataset:
         return self._data
 
     @property
+    def alphas(self) -> list[float]:
+        """Get the list of quantile levels."""
+        return self._alphas
+
+    @property
     def label(self) -> pd.DataFrame:
         """Get the raw target labels."""
         self.__label_available()
         return self._label
 
     @property
-    def alphas(self) -> list[float]:
-        """Get the list of quantile levels."""
-        return self._alphas
+    def label_mean(self) -> float:
+        self.__label_available()
+        return self._label_mean
 
     @property
     def dtrain(self) -> DtrainLike:

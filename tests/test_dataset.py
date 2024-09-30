@@ -26,7 +26,9 @@ def test_mqdataset_initialization_with_lgb():
         dataset.data,
         _concat(data, 3).assign(_tau=[0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3]),
     )
-    np.testing.assert_array_equal(dataset.label, np.concatenate([label] * len(alphas)))
+    np.testing.assert_array_equal(
+        dataset.label, np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1])
+    )
 
 
 def test_mqdataset_initialization_with_xgb():
@@ -42,7 +44,7 @@ def test_mqdataset_initialization_with_xgb():
     pd.testing.assert_frame_equal(
         dataset.data, _concat(data, 2).assign(_tau=[0.1, 0.1, 0.1, 0.2, 0.2, 0.2])
     )
-    np.testing.assert_array_equal(dataset.label, np.concatenate([label] * len(alphas)))
+    np.testing.assert_array_equal(dataset.label, np.array([-1, 0, 1, -1, 0, 1]))
 
 
 def test_mqdataset_initialization_with_invalid_alpha():
