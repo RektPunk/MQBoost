@@ -126,6 +126,7 @@ class MQOptimizer:
             dict[str, Any]: The best hyperparameters found by the optimization process.
         """
         self._dataset = dataset
+        self._label_mean = dataset.label_mean
         self._MQObj = MQObjective(
             alphas=dataset.alphas,
             objective=self._objective,
@@ -189,7 +190,10 @@ class MQOptimizer:
                 valid_sets=dvalid,
             )
             _gbm = lgb.train(**model_params)
-            _preds = _gbm.predict(data=deval, num_iteration=_gbm.best_iteration)
+            _preds = (
+                _gbm.predict(data=deval, num_iteration=_gbm.best_iteration)
+                + self._label_mean
+            )
             _, loss, _ = self._MQObj.feval(y_pred=_preds, dtrain=dvalid)
         elif self.__is_xgb:
             model_params = dict(
@@ -198,7 +202,7 @@ class MQOptimizer:
                 evals=[(dvalid, "valid")],
             )
             _gbm = xgb.train(**model_params)
-            _preds = _gbm.predict(data=deval)
+            _preds = _gbm.predict(data=deval) + self._label_mean
             _, loss = self._MQObj.feval(y_pred=_preds, dtrain=dvalid)
         else:
             raise FittingException("Model name is invalid")
