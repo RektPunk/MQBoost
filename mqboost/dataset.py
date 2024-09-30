@@ -111,6 +111,11 @@ class MQDataset:
         return self._data
 
     @property
+    def alphas(self) -> list[float]:
+        """Get the list of quantile levels."""
+        return self._alphas
+
+    @property
     def label(self) -> pd.DataFrame:
         """Get the raw target labels."""
         self.__label_available()
@@ -118,12 +123,8 @@ class MQDataset:
 
     @property
     def label_mean(self) -> float:
+        self.__label_available()
         return self._label_mean
-
-    @property
-    def alphas(self) -> list[float]:
-        """Get the list of quantile levels."""
-        return self._alphas
 
     @property
     def dtrain(self) -> DtrainLike:
