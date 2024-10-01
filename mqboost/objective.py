@@ -110,8 +110,7 @@ def _eval_check_loss(
     for alpha_inx in range(_len_alpha):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
         _loss = _rho(error=_err_for_alpha, alpha=alphas[alpha_inx])
-        loss = loss + np.mean(_loss)
-    loss = loss / _len_alpha
+        loss += np.mean(_loss)
     return loss
 
 

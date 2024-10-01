@@ -149,7 +149,7 @@ def test_eval_check_loss(dummy_data):
     """Test evaluation of the check loss."""
     dtrain = dummy_data(y_true)
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
-    np.testing.assert_almost_equal(loss, 0.012)
+    np.testing.assert_almost_equal(loss, 0.036)
     assert isinstance(loss, float)
     assert loss > 0
 
