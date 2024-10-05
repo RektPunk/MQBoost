@@ -58,6 +58,7 @@ class MQRegressor:
         self,
         dataset: MQDataset,
         eval_set: MQDataset | None = None,
+        **kwargs,
     ) -> None:
         """
         Fit the regressor to the dataset.
@@ -65,6 +66,8 @@ class MQRegressor:
             dataset (MQDataset): The dataset to fit the model on.
             eval_set (Optional[MQDataset]):
                 The validation dataset. If None, the dataset is used for evaluation.
+            **kwargs:
+                train parameters.
         """
         if eval_set:
             _eval_set = eval_set.dtrain
@@ -92,6 +95,7 @@ class MQRegressor:
                 params=params,
                 feval=self._MQObj.feval,
                 valid_sets=[_eval_set],
+                **kwargs,
             )
         elif self.__is_xgb:
             self.model = xgb.train(
@@ -101,6 +105,7 @@ class MQRegressor:
                 obj=self._MQObj.fobj,
                 custom_metric=self._MQObj.feval,
                 evals=[(_eval_set, "eval")],
+                **kwargs,
             )
         self._colnames = dataset.columns.to_list()
         self._fitted = True
