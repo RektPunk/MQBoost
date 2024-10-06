@@ -46,12 +46,12 @@ def _hess_huber(error: np.ndarray, **kwargs) -> np.ndarray:
 
 # Approx loss (MM loss)
 def _grad_approx(error: np.ndarray, alpha: float, epsilon: float) -> np.ndarray:
-    _grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
+    _grad = (1 - 2 * alpha - error / (epsilon + np.abs(error))) / 2
     return _grad
 
 
 def _hess_approx(error: np.ndarray, epsilon: float, **kwargs) -> np.ndarray:
-    _hess = 1 / (2 * (epsilon + np.abs(error)))
+    _hess = 1 / (2 * (1 + epsilon + np.abs(error)))
     return _hess
 
 
