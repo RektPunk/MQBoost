@@ -200,6 +200,7 @@ class MQOptimizer:
                 params=params,
                 dtrain=dtrain,
                 evals=[(dvalid, "valid")],
+                num_boost_round=100,
             )
             _gbm = xgb.train(**model_params)
             _preds = _gbm.predict(data=deval) + self._label_mean
