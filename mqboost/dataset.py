@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 
+import numpy as np
 import pandas as pd
 
 from mqboost.base import (
@@ -9,6 +10,7 @@ from mqboost.base import (
     FittingException,
     ModelName,
     TypeName,
+    WeightLike,
     XdataLike,
     YdataLike,
 )
@@ -32,6 +34,7 @@ class MQDataset:
             Must be in ascending order and contain no duplicates.
         data (pd.DataFrame | pd.Series | np.ndarray): The input features.
         label (pd.Series | np.ndarray): The target labels (if provided).
+        weight (list[float] | list[int] | np.ndarray | pd.Series): Weight for each instance (if provided).
         model (str): The model type (LightGBM or XGBoost).
         reference (MQBoost | None): Reference dataset for label encoding and label mean.
 
@@ -52,6 +55,7 @@ class MQDataset:
         alphas: AlphaLike,
         data: XdataLike,
         label: YdataLike | None = None,
+        weight: WeightLike | None = None,
         model: str = ModelName.lightgbm.value,
         reference: Optional["MQDataset"] = None,
     ) -> None:
@@ -84,6 +88,10 @@ class MQDataset:
             self._label_mean = reference.label_mean if reference else label.mean()
             self._label = prepare_y(y=label - self._label_mean, alphas=self._alphas)
             self._is_none_label = False
+
+        if weight is not None:
+            _weight = np.array(weight) if not isinstance(weight, np.ndarray) else weight
+            self._weight = prepare_y(y=_weight, alphas=self._alphas)
 
     @property
     def train_dtype(self) -> Callable:
@@ -123,14 +131,20 @@ class MQDataset:
 
     @property
     def label_mean(self) -> float:
+        """Get the label mean."""
         self.__label_available()
         return self._label_mean
+
+    @property
+    def weight(self) -> WeightLike | None:
+        """Get the weights."""
+        return getattr(self, "_weight", None)
 
     @property
     def dtrain(self) -> DtrainLike:
         """Get the training data in the required format for the model."""
         self.__label_available()
-        return self._train_dtype(data=self._data, label=self._label)
+        return self._train_dtype(data=self._data, label=self._label, weight=self.weight)
 
     @property
     def dpredict(self) -> DtrainLike | Callable:
