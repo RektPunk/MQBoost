@@ -29,6 +29,7 @@ AlphaLike = list[float] | float
 ModelLike = lgb.basic.Booster | xgb.Booster
 DtrainLike = lgb.basic.Dataset | xgb.DMatrix
 ParamsLike = dict[str, float | int | str | bool]
+WeightLike = list[float] | list[int] | np.ndarray | pd.Series
 
 
 # Name
