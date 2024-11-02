@@ -84,8 +84,8 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> ObjLike:
         _len_y = len(_y_train[0])
         for alpha_inx in range(len(alphas)):
             _err_for_alpha: np.ndarray = _y_train[alpha_inx] - _y_pred[alpha_inx]
-            _grad = grad_fn(_err_for_alpha, alphas[alpha_inx], **kwargs)
-            _hess = hess_fn(_err_for_alpha, alphas[alpha_inx], **kwargs)
+            _grad = grad_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
+            _hess = hess_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
             grads.append(_grad / _len_y)
             hess.append(_hess / _len_y)
 
