@@ -7,8 +7,8 @@ from mqboost.base import DtrainLike, ModelName, ObjectiveName
 from mqboost.utils import delta_validate, epsilon_validate
 
 CHECK_LOSS: str = "check_loss"
-GradFnLike = Callable[[Any], np.ndarray]
-HessFnLike = Callable[[Any], np.ndarray]
+GradFnLike = Callable[[np.ndarray, float, Any], np.ndarray]
+HessFnLike = Callable[[np.ndarray, float, Any], np.ndarray]
 ObjLike = Callable[
     [np.ndarray, DtrainLike, list[float], Any], tuple[np.ndarray, np.ndarray]
 ]
@@ -79,14 +79,15 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> ObjLike:
         _y_train, _y_pred = _train_pred_reshape(
             y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
         )
-        grads = []
-        hess = []
+        grads: list[np.ndarray] = []
+        hess: list[np.ndarray] = []
+        _len_y = len(_y_train[0])
         for alpha_inx in range(len(alphas)):
-            _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
-            _grad = grad_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
-            _hess = hess_fn(error=_err_for_alpha, alpha=alphas[alpha_inx], **kwargs)
-            grads.append(_grad)
-            hess.append(_hess)
+            _err_for_alpha: np.ndarray = _y_train[alpha_inx] - _y_pred[alpha_inx]
+            _grad = grad_fn(_err_for_alpha, alphas[alpha_inx], **kwargs)
+            _hess = hess_fn(_err_for_alpha, alphas[alpha_inx], **kwargs)
+            grads.append(_grad / _len_y)
+            hess.append(_hess / _len_y)
 
         return np.concatenate(grads), np.concatenate(hess)
 
