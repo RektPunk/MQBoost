@@ -37,6 +37,7 @@ def test_mqobjective_check_loss_initialization():
     mq_objective = MQObjective(
         alphas=alphas,
         objective=ObjectiveName.check,
+        weight=None,
         model=ModelName.xgboost,
         delta=0.0,
         epsilon=0.0,
@@ -53,6 +54,7 @@ def test_mqobjective_huber_loss_initialization():
     mq_objective = MQObjective(
         alphas=alphas,
         objective=ObjectiveName.huber,
+        weight=None,
         model=ModelName.lightgbm,
         delta=delta,
         epsilon=0.0,
@@ -67,6 +69,7 @@ def test_mqobjective_approx_loss_initialization():
     mq_objective = MQObjective(
         alphas=alphas,
         objective=ObjectiveName.approx,
+        weight=None,
         model=ModelName.xgboost,
         delta=0.0,
         epsilon=epsilon,
@@ -79,7 +82,9 @@ def test_mqobjective_approx_loss_initialization():
 def test_check_loss_grad_hess(dummy_data):
     """Test check loss gradient and Hessian calculation."""
     dtrain = dummy_data(y_true)
-    grads, hess = check_loss_grad_hess(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
+    grads, hess = check_loss_grad_hess(
+        y_pred=y_pred, dtrain=dtrain, weight=None, alphas=alphas
+    )
     # fmt: off
     expected_grads = [-0.02, -0.02, 0.18, -0.02, -0.02, -0.1, -0.1, 0.1, -0.1, -0.1, -0.18, -0.18, 0.02, -0.18, -0.18]
     # fmt: on
@@ -102,7 +107,7 @@ def test_huber_loss_grad_hess(dummy_data, delta, expected_grads):
     """Test huber loss gradient and Hessian calculation with multiple datasets and deltas."""
     dtrain = dummy_data(y_true)
     grads, hess = huber_loss_grad_hess(
-        y_pred=y_pred, dtrain=dtrain, alphas=alphas, delta=delta
+        y_pred=y_pred, dtrain=dtrain, weight = None,alphas=alphas, delta=delta
     )
 
     np.testing.assert_almost_equal(grads, np.array(expected_grads))
@@ -136,7 +141,7 @@ def test_approx_loss_grad_hess(dummy_data, epsilon, expected_grads, expected_hes
     """Test approx loss gradient and Hessian calculation."""
     dtrain = dummy_data(y_true)
     grads, hess = approx_loss_grad_hess(
-        y_pred=y_pred, dtrain=dtrain, alphas=alphas, epsilon=epsilon
+        y_pred=y_pred, dtrain=dtrain, weight = None, alphas=alphas, epsilon=epsilon
     )
     np.testing.assert_almost_equal(grads, np.array(expected_grads), decimal=4)
     np.testing.assert_almost_equal(hess, np.array(expected_hess), decimal=4)
@@ -181,6 +186,7 @@ def test_invalid_delta_for_huber():
         MQObjective(
             alphas=alphas,
             objective=ObjectiveName.huber,
+            weight=None,
             model=ModelName.xgboost,
             delta=-0.1,  # Invalid delta (negative)
             epsilon=0.0,
@@ -194,6 +200,7 @@ def test_invalid_epsilon_for_approx():
         MQObjective(
             alphas=alphas,
             objective=ObjectiveName.approx,
+            weight=None,
             model=ModelName.xgboost,
             delta=0.0,
             epsilon=-0.01,  # Invalid epsilon (negative)

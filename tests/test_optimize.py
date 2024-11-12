@@ -134,6 +134,7 @@ def test_mqobjective_property(sample_data):
     optimizer._MQObj = MQObjective(
         alphas=sample_data.alphas,
         objective=optimizer._objective,
+        weight=None,
         model=optimizer._model,
         delta=optimizer._delta,
         epsilon=optimizer._epsilon,
