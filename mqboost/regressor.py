@@ -84,6 +84,7 @@ class MQRegressor:
         self._MQObj = MQObjective(
             alphas=dataset.alphas,
             objective=self._objective,
+            weight=dataset.weight,
             model=self._model,
             delta=self._delta,
             epsilon=self._epsilon,
