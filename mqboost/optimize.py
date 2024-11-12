@@ -55,11 +55,38 @@ _GET_PARAMS_FUNC = {
 
 
 def _train_valid_split(
-    x_train: pd.DataFrame, y_train: np.ndarray
-) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
-    return train_test_split(
-        x_train, y_train, test_size=0.2, random_state=42, stratify=x_train["_tau"]
-    )
+    x_train: pd.DataFrame,
+    y_train: np.ndarray,
+    weight: np.ndarray | None,
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray | None,
+    np.ndarray | None,
+]:
+    if weight is not None:
+        _x_train, _x_valid, _y_train, _y_valid, _w_train, _w_valid = train_test_split(
+            x_train,
+            y_train,
+            weight,
+            test_size=0.2,
+            random_state=42,
+            stratify=x_train["_tau"],
+        )
+    else:
+        _x_train, _x_valid, _y_train, _y_valid = train_test_split(
+            x_train,
+            y_train,
+            test_size=0.2,
+            random_state=42,
+            stratify=x_train["_tau"],
+        )
+        _w_train = None
+        _w_valid = None
+
+    return _x_train, _x_valid, _y_train, _y_valid, _w_train, _w_valid
 
 
 class MQOptimizer:
@@ -130,17 +157,27 @@ class MQOptimizer:
         self._MQObj = MQObjective(
             alphas=dataset.alphas,
             objective=self._objective,
+            weight=dataset.weight,
             model=self._model,
             delta=self._delta,
             epsilon=self._epsilon,
         )
         if valid_set is None:
-            x_train, x_valid, y_train, y_valid = _train_valid_split(
-                x_train=self._dataset.data, y_train=self._dataset.label
+            x_train, x_valid, y_train, y_valid, weight_train, weight_valid = (
+                _train_valid_split(
+                    x_train=self._dataset.data,
+                    y_train=self._dataset.label,
+                    weight=dataset.weight,
+                )
             )
-            dtrain = self._dataset.train_dtype(data=x_train, label=y_train)
-            dvalid = self._dataset.train_dtype(data=x_valid, label=y_valid)
+            dtrain = self._dataset.train_dtype(
+                data=x_train, label=y_train, weight=weight_train
+            )
+            dvalid = self._dataset.train_dtype(
+                data=x_valid, label=y_valid, weight=weight_valid
+            )
             deval = self._dataset.predict_dtype(data=x_valid)
+
         else:
             dtrain = self._dataset.dtrain
             dvalid = valid_set.dtrain
