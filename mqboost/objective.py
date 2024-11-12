@@ -186,7 +186,7 @@ class MQObjective:
         model (ModelName): The model type (either 'lightgbm' or 'xgboost').
         delta (float): The delta parameter used for the 'huber' loss.
         epsilon (float): The epsilon parameter used for the 'approx' loss.
-
+        weight (np.ndarray): The weight for each instance (if provided).
     Properties:
         fobj (Callable): The objective function to be minimized.
         feval (Callable): The evaluation function used during training.
