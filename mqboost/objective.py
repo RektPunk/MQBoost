@@ -73,6 +73,7 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> ObjLike:
         y_pred: np.ndarray,
         dtrain: DtrainLike,
         alphas: list[float],
+        weight: np.ndarray | None,
         **kwargs: Any,
     ) -> tuple[np.ndarray, np.ndarray]:
         _len_alpha = len(alphas)
@@ -89,7 +90,10 @@ def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> ObjLike:
             grads.append(_grad / _len_y)
             hess.append(_hess / _len_y)
 
-        return np.concatenate(grads), np.concatenate(hess)
+        if isinstance(weight, np.ndarray):
+            return np.concatenate(grads) * weight, np.concatenate(hess) * weight
+        else:
+            return np.concatenate(grads), np.concatenate(hess)
 
     return _compute_grads_hess
 
@@ -144,13 +148,21 @@ def validate_parameters(objective: ObjectiveName, delta: float, epsilon: float) 
 
 
 def get_fobj_function(
-    objective: ObjectiveName, alphas: list[float], delta: float, epsilon: float
+    objective: ObjectiveName,
+    weight: np.ndarray | None,
+    alphas: list[float],
+    delta: float,
+    epsilon: float,
 ) -> ObjLike:
     objective_mapping: dict[ObjectiveName, ObjLike] = {
-        ObjectiveName.check: partial(check_loss_grad_hess, alphas=alphas),
-        ObjectiveName.huber: partial(huber_loss_grad_hess, alphas=alphas, delta=delta),
+        ObjectiveName.check: partial(
+            check_loss_grad_hess, weight=weight, alphas=alphas
+        ),
+        ObjectiveName.huber: partial(
+            huber_loss_grad_hess, weight=weight, alphas=alphas, delta=delta
+        ),
         ObjectiveName.approx: partial(
-            approx_loss_grad_hess, alphas=alphas, epsilon=epsilon
+            approx_loss_grad_hess, weight=weight, alphas=alphas, epsilon=epsilon
         ),
     }
     return objective_mapping[objective]
@@ -174,7 +186,7 @@ class MQObjective:
         model (ModelName): The model type (either 'lightgbm' or 'xgboost').
         delta (float): The delta parameter used for the 'huber' loss.
         epsilon (float): The epsilon parameter used for the 'approx' loss.
-
+        weight (np.ndarray): The weight for each instance (if provided).
     Properties:
         fobj (Callable): The objective function to be minimized.
         feval (Callable): The evaluation function used during training.
@@ -187,11 +199,16 @@ class MQObjective:
         model: ModelName,
         delta: float,
         epsilon: float,
+        weight: np.ndarray | None,
     ) -> None:
         """Initialize the MQObjective."""
         validate_parameters(objective=objective, delta=delta, epsilon=epsilon)
         self._fobj = get_fobj_function(
-            objective=objective, alphas=alphas, delta=delta, epsilon=epsilon
+            objective=objective,
+            weight=weight,
+            alphas=alphas,
+            delta=delta,
+            epsilon=epsilon,
         )
         self._feval = get_feval_function(model=model, alphas=alphas)
 

@@ -46,6 +46,7 @@ class MQDataset:
         data: Returns the input features.
         label: Returns the target labels.
         alphas: Returns the list of quantile levels.
+        weight: Returns the weight vector for each instance.
         dtrain: Returns the training data in the required format for the model.
         dpredict: Returns the prediction data in the required format for the model.
     """
@@ -136,7 +137,7 @@ class MQDataset:
         return self._label_mean
 
     @property
-    def weight(self) -> WeightLike | None:
+    def weight(self) -> np.ndarray | None:
         """Get the weights."""
         return getattr(self, "_weight", None)
 
