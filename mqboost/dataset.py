@@ -136,7 +136,7 @@ class MQDataset:
         return self._label_mean
 
     @property
-    def weight(self) -> WeightLike | None:
+    def weight(self) -> np.ndarray | None:
         """Get the weights."""
         return getattr(self, "_weight", None)
 
