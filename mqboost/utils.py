@@ -20,6 +20,9 @@ def alpha_validate(
     if isinstance(alphas, float):
         alphas = [alphas]
 
+    if not isinstance(alphas, list):
+        raise ValidationException("Alpha must be a list or float")
+
     if 0.0 in alphas or 1.0 in alphas:
         raise ValidationException("Alpha cannot be 0 or 1")
 

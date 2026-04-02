@@ -12,8 +12,7 @@ __all__ = ["MQRegressor"]
 
 
 class MQRegressor:
-    """
-    MQRegressor is a custom multiple quantile estimator that supports LightGBM and XGBoost models with
+    """MQRegressor is a custom multiple quantile estimator that supports LightGBM and XGBoost models with
     preserving monotonicity among quantiles.
 
     Attributes:
@@ -49,8 +48,8 @@ class MQRegressor:
         """Initialize the MQRegressor."""
         params_validate(params=params)
         self._params = params
-        self._model = ModelName.get(model)
-        self._objective = ObjectiveName.get(objective)
+        self._model = ModelName[model]
+        self._objective = ObjectiveName[objective]
         self._delta = delta
         self._epsilon = epsilon
 
@@ -138,7 +137,7 @@ class MQRegressor:
         return self._MQObj
 
     @property
-    def feature_importance(self) -> dict[str, float]:
+    def feature_importance(self) -> dict[str, int]:
         self.__predict_available()
         importances = {str(k): 0 for k in self._colnames}
         if self.__is_lgb:

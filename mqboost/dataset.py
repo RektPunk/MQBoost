@@ -1,6 +1,7 @@
-from typing import Callable, Optional
+from typing import Callable
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from mqboost.base import (
@@ -24,8 +25,7 @@ def _compare_datasets(data: pd.DataFrame, reference_data: pd.DataFrame) -> None:
 
 
 class MQDataset:
-    """
-    MQDataset encapsulates the dataset used for training and predicting with the MQRegressor.
+    """MQDataset encapsulates the dataset used for training and predicting with the MQRegressor.
     It supports both LightGBM and XGBoost models, handling data preparation, validation, and conversion for training and prediction.
 
     Attributes:
@@ -36,7 +36,6 @@ class MQDataset:
         label (pd.Series | np.ndarray): The target labels (if provided).
         weight (list[float] | list[int] | np.ndarray | pd.Series): Weight for each instance (if provided).
         model (str): The model type (LightGBM or XGBoost).
-        reference (MQBoost | None): Reference dataset for label encoding and label mean.
 
     Property:
         train_dtype: Returns the data type function for training data.
@@ -58,35 +57,31 @@ class MQDataset:
         label: YdataLike | None = None,
         weight: WeightLike | None = None,
         model: str = ModelName.lightgbm.value,
-        reference: Optional["MQDataset"] = None,
     ) -> None:
         """Initialize the MQDataset."""
-        self._model = ModelName.get(model)
+        self._model = ModelName[model]
         self._nrow = len(data)
         self._alphas = alpha_validate(alphas)
 
-        _funcs = FUNC_TYPE.get(self._model)
-        self._train_dtype: Callable = _funcs.get(TypeName.train_dtype)
-        self._predict_dtype: Callable = _funcs.get(TypeName.predict_dtype)
+        _funcs = FUNC_TYPE[self._model]
+        self._train_dtype: Callable = _funcs[TypeName.train_dtype]
+        self._predict_dtype: Callable = _funcs[TypeName.predict_dtype]
 
         _data = to_dataframe(data)
-        if reference is None:
-            self.encoders: dict[str, MQLabelEncoder] = {}
-            for col in _data.columns:
-                if _data[col].dtype == "object":
-                    _encoder = MQLabelEncoder()
-                    _data[col] = _encoder.fit_transform(_data[col])
-                    self.encoders.update({col: _encoder})
-        else:
-            _compare_datasets(_data, reference.data)
-            self.encoders = reference.encoders.copy()
-            for col, _encoder in self.encoders.items():
-                _data[col] = _encoder.transform(_data[col])
+        self.encoders: dict[str, MQLabelEncoder] = {}
+        for col in _data.columns:
+            _series = _data[col]
+            if not isinstance(_series, pd.Series):
+                continue
+            if _series.dtype == "object":
+                _encoder = MQLabelEncoder()
+                _data[col] = _encoder.fit_transform(_series)
+                self.encoders.update({col: _encoder})
 
         self._data = prepare_x(x=_data, alphas=self._alphas)
         self._columns = self._data.columns
         if label is not None:
-            self._label_mean = reference.label_mean if reference else label.mean()
+            self._label_mean = label.mean()
             self._label = prepare_y(y=label - self._label_mean, alphas=self._alphas)
             self._is_none_label = False
 
@@ -125,7 +120,7 @@ class MQDataset:
         return self._alphas
 
     @property
-    def label(self) -> pd.DataFrame:
+    def label(self) -> npt.NDArray:
         """Get the raw target labels."""
         self.__label_available()
         return self._label
@@ -137,7 +132,7 @@ class MQDataset:
         return self._label_mean
 
     @property
-    def weight(self) -> np.ndarray | None:
+    def weight(self) -> npt.NDArray | None:
         """Get the weights."""
         return getattr(self, "_weight", None)
 

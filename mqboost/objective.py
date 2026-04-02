@@ -61,7 +61,9 @@ def _train_pred_reshape(
     len_alpha: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Reshape training predictions and labels to match the number of quantile levels."""
-    _y_train: np.ndarray = dtrain.get_label()
+    _y_train = dtrain.get_label()
+    if not isinstance(_y_train, np.ndarray):
+        _y_train = np.array(_y_train)
     return _y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
