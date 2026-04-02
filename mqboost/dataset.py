@@ -1,27 +1,19 @@
 from typing import Callable
 
+import lightgbm as lgb
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import xgboost as xgb
 
 from mqboost.base import (
     FUNC_TYPE,
-    AlphaLike,
-    DtrainLike,
     FittingException,
     ModelName,
     TypeName,
-    WeightLike,
-    XdataLike,
-    YdataLike,
 )
 from mqboost.encoder import MQLabelEncoder
 from mqboost.utils import alpha_validate, prepare_x, prepare_y, to_dataframe
-
-
-def _compare_datasets(data: pd.DataFrame, reference_data: pd.DataFrame) -> None:
-    if data.shape[1] != reference_data.shape[1] - 1:
-        raise ValueError("Number of columns do not match")
 
 
 class MQDataset:
@@ -52,10 +44,10 @@ class MQDataset:
 
     def __init__(
         self,
-        alphas: AlphaLike,
-        data: XdataLike,
-        label: YdataLike | None = None,
-        weight: WeightLike | None = None,
+        alphas: list[float] | float,
+        data: pd.DataFrame | pd.Series | npt.NDArray,
+        label: pd.Series | npt.NDArray | None = None,
+        weight: list[float] | list[int] | npt.NDArray | pd.Series | None = None,
         model: str = ModelName.lightgbm.value,
     ) -> None:
         """Initialize the MQDataset."""
@@ -64,19 +56,18 @@ class MQDataset:
         self._alphas = alpha_validate(alphas)
 
         _funcs = FUNC_TYPE[self._model]
-        self._train_dtype: Callable = _funcs[TypeName.train_dtype]
-        self._predict_dtype: Callable = _funcs[TypeName.predict_dtype]
+        self._train_dtype = _funcs[TypeName.train_dtype]
+        self._predict_dtype = _funcs[TypeName.predict_dtype]
 
         _data = to_dataframe(data)
         self.encoders: dict[str, MQLabelEncoder] = {}
-        for col in _data.columns:
+        for col in _data.select_dtypes(exclude="number").columns:
             _series = _data[col]
             if not isinstance(_series, pd.Series):
                 continue
-            if _series.dtype == "object":
-                _encoder = MQLabelEncoder()
-                _data[col] = _encoder.fit_transform(_series)
-                self.encoders.update({col: _encoder})
+            _encoder = MQLabelEncoder()
+            _data[col] = _encoder.fit_transform(_series)
+            self.encoders.update({col: _encoder})
 
         self._data = prepare_x(x=_data, alphas=self._alphas)
         self._columns = self._data.columns
@@ -90,12 +81,12 @@ class MQDataset:
             self._weight = prepare_y(y=_weight, alphas=self._alphas)
 
     @property
-    def train_dtype(self) -> Callable:
+    def train_dtype(self):
         """Get the data type function for training data."""
         return self._train_dtype
 
     @property
-    def predict_dtype(self) -> Callable:
+    def predict_dtype(self):
         """Get the data type function for prediction data."""
         return self._predict_dtype
 
@@ -137,13 +128,13 @@ class MQDataset:
         return getattr(self, "_weight", None)
 
     @property
-    def dtrain(self) -> DtrainLike:
+    def dtrain(self) -> lgb.Dataset | xgb.DMatrix:
         """Get the training data in the required format for the model."""
         self.__label_available()
         return self._train_dtype(data=self._data, label=self._label, weight=self.weight)
 
     @property
-    def dpredict(self) -> DtrainLike | Callable:
+    def dpredict(self) -> lgb.Dataset | xgb.DMatrix | Callable:
         """Get the prediction data in the required format for the model."""
         return self._predict_dtype(data=self._data)
 

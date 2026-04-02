@@ -6,9 +6,8 @@ import xgboost as xgb
 from mqboost.base import FittingException, ModelName, ObjectiveName
 from mqboost.regressor import MQDataset, MQRegressor
 
+
 # Test data and helper functions
-
-
 @pytest.fixture
 def dummy_dataset_lgb():
     X = np.random.rand(100, 10)
@@ -63,7 +62,7 @@ def test_mqregressor_initialization():
 
 def test_invalid_model_initialization():
     params = {"learning_rate": 0.1, "num_leaves": 31}
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         MQRegressor(
             params=params,
             model="invalid_model",
@@ -75,7 +74,7 @@ def test_invalid_model_initialization():
 
 def test_invalid_objective_initialization():
     params = {"learning_rate": 0.1, "num_leaves": 31}
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         MQRegressor(
             params=params,
             model=ModelName.lightgbm.value,
@@ -191,16 +190,16 @@ def test_feature_importance_after_fit(dummy_dataset_lgb):
     gbm_model.fit(dataset=dummy_dataset_lgb)
     feature_importances = gbm_model.feature_importance
 
-    assert isinstance(
-        feature_importances, dict
-    ), "Feature importances should be a dictionary"
-    assert len(feature_importances) == len(
-        dummy_dataset_lgb.columns
-    ), "Feature importance length mismatch"
+    assert isinstance(feature_importances, dict), (
+        "Feature importances should be a dictionary"
+    )
+    assert len(feature_importances) == len(dummy_dataset_lgb.columns), (
+        "Feature importance length mismatch"
+    )
     for feature in dummy_dataset_lgb.columns:
-        assert (
-            str(feature) in feature_importances
-        ), f"Feature {feature} not found in importance"
+        assert str(feature) in feature_importances, (
+            f"Feature {feature} not found in importance"
+        )
 
 
 def test_feature_importance_positive(dummy_dataset_lgb):
@@ -210,6 +209,6 @@ def test_feature_importance_positive(dummy_dataset_lgb):
     gbm_model.fit(dataset=dummy_dataset_lgb)
     feature_importances = gbm_model.feature_importance
 
-    assert all(
-        [importance >= 0 for importance in feature_importances.values()]
-    ), "All importance should be positive."
+    assert all([importance >= 0 for importance in feature_importances.values()]), (
+        "All importance should be positive."
+    )

@@ -1,20 +1,16 @@
 import warnings
 from itertools import chain, repeat
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
-from mqboost.base import (
-    AlphaLike,
-    ParamsLike,
-    ValidationException,
-    XdataLike,
-    YdataLike,
-)
+from mqboost.base import ValidationException
 
 
 def alpha_validate(
-    alphas: AlphaLike,
+    alphas: list[float] | float,
 ) -> list[float]:
     """Validates the list of alphas ensuring they are in ascending order and contain no duplicates."""
     if isinstance(alphas, float):
@@ -41,7 +37,7 @@ def alpha_validate(
     return alphas
 
 
-def to_dataframe(x: XdataLike) -> pd.DataFrame:
+def to_dataframe(x: pd.DataFrame | pd.Series | npt.NDArray) -> pd.DataFrame:
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
         _x = pd.DataFrame(x.copy())
     else:
@@ -71,9 +67,9 @@ def prepare_x(
 
 
 def prepare_y(
-    y: YdataLike,
+    y: pd.Series | npt.NDArray,
     alphas: list[float],
-) -> np.ndarray:
+) -> npt.NDArray:
     """Prepares and returns a stacked array of target values repeated for each alpha."""
     return np.concatenate(list(repeat(y, len(alphas))))
 
@@ -101,7 +97,7 @@ def epsilon_validate(epsilon: float) -> None:
         raise ValidationException("Epsilon must be positive")
 
 
-def params_validate(params: ParamsLike) -> None:
+def params_validate(params: dict[str, Any]) -> None:
     """Validates the model parameter ensuring its key dosen't contain 'objective'."""
     if "objective" in params:
         raise ValidationException(

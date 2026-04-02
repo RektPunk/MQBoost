@@ -1,37 +1,30 @@
 from functools import partial
 from typing import Any, Callable
 
+import lightgbm as lgb
 import numpy as np
+import numpy.typing as npt
+import xgboost as xgb
 
-from mqboost.base import DtrainLike, ModelName, ObjectiveName
+from mqboost.base import ModelName, ObjectiveName
 from mqboost.utils import delta_validate, epsilon_validate
-
-CHECK_LOSS: str = "check_loss"
-GradFnLike = Callable[[np.ndarray, float, Any], np.ndarray]
-HessFnLike = Callable[[np.ndarray, float, Any], np.ndarray]
-ObjLike = Callable[
-    [np.ndarray, DtrainLike, list[float], Any], tuple[np.ndarray, np.ndarray]
-]
-EvalLike = Callable[
-    [np.ndarray, DtrainLike, list[float]], tuple[str, float, bool] | tuple[str, float]
-]
 
 
 # check loss
-def _grad_rho(error: np.ndarray, alpha: float) -> np.ndarray:
+def _grad_rho(error: npt.NDArray, alpha: float) -> npt.NDArray:
     return (error < 0).astype(int) - alpha
 
 
-def _rho(error: np.ndarray, alpha: float) -> np.ndarray:
+def _rho(error: npt.NDArray, alpha: float) -> npt.NDArray:
     return -error * _grad_rho(error=error, alpha=alpha)
 
 
-def _hess_rho(error: np.ndarray, **kwargs) -> np.ndarray:
+def _hess_rho(error: npt.NDArray, **kwargs) -> npt.NDArray:
     return np.ones_like(error)
 
 
 # Huber loss
-def _grad_huber(error: np.ndarray, alpha: float, delta: float) -> np.ndarray:
+def _grad_huber(error: npt.NDArray, alpha: float, delta: float) -> npt.NDArray:
     _abs_error = np.abs(error)
     _smaller_delta = (_abs_error <= delta).astype(int)
     _bigger_delta = (_abs_error > delta).astype(int)
@@ -40,26 +33,26 @@ def _grad_huber(error: np.ndarray, alpha: float, delta: float) -> np.ndarray:
     return _r * _smaller_delta + _grad * _bigger_delta
 
 
-def _hess_huber(error: np.ndarray, **kwargs) -> np.ndarray:
+def _hess_huber(error: npt.NDArray, **kwargs) -> npt.NDArray:
     return np.ones_like(error)
 
 
 # Approx loss (MM loss)
-def _grad_approx(error: np.ndarray, alpha: float, epsilon: float) -> np.ndarray:
+def _grad_approx(error: npt.NDArray, alpha: float, epsilon: float) -> npt.NDArray:
     _grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
     return _grad
 
 
-def _hess_approx(error: np.ndarray, epsilon: float, **kwargs) -> np.ndarray:
+def _hess_approx(error: npt.NDArray, epsilon: float, **kwargs) -> npt.NDArray:
     _hess = 1 / (2 * (epsilon + np.abs(error)))
     return _hess
 
 
 def _train_pred_reshape(
-    y_pred: np.ndarray,
-    dtrain: DtrainLike,
+    y_pred: npt.NDArray,
+    dtrain: lgb.Dataset | xgb.DMatrix,
     len_alpha: int,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[npt.NDArray, npt.NDArray]:
     """Reshape training predictions and labels to match the number of quantile levels."""
     _y_train = dtrain.get_label()
     if not isinstance(_y_train, np.ndarray):
@@ -68,16 +61,16 @@ def _train_pred_reshape(
 
 
 # Compute gradient hessian logic
-def compute_grad_hess(grad_fn: GradFnLike, hess_fn: HessFnLike) -> ObjLike:
+def compute_grad_hess(grad_fn: Callable, hess_fn: Callable) -> Callable:
     """Return computing gradient hessian function."""
 
     def _compute_grads_hess(
-        y_pred: np.ndarray,
-        dtrain: DtrainLike,
+        y_pred: npt.NDArray,
+        dtrain: lgb.Dataset | xgb.DMatrix,
         alphas: list[float],
-        weight: np.ndarray | None,
+        weight: npt.NDArray | None,
         **kwargs: Any,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[npt.NDArray, npt.NDArray]:
         _len_alpha = len(alphas)
         _y_train, _y_pred = _train_pred_reshape(
             y_pred=y_pred, dtrain=dtrain, len_alpha=_len_alpha
@@ -108,7 +101,7 @@ approx_loss_grad_hess = compute_grad_hess(grad_fn=_grad_approx, hess_fn=_hess_ap
 
 def _eval_check_loss(
     y_pred: np.ndarray,
-    dtrain: DtrainLike,
+    dtrain: lgb.Dataset | xgb.DMatrix,
     alphas: list[float],
 ) -> float:
     """Evaluate the check loss function."""
@@ -120,26 +113,26 @@ def _eval_check_loss(
     for alpha_inx in range(_len_alpha):
         _err_for_alpha = _y_train[alpha_inx] - _y_pred[alpha_inx]
         _loss = _rho(error=_err_for_alpha, alpha=alphas[alpha_inx])
-        loss += np.mean(_loss)
+        loss += float(np.mean(_loss))
     return loss
 
 
 def _xgb_eval_loss(
     y_pred: np.ndarray,
-    dtrain: DtrainLike,
+    dtrain: lgb.Dataset | xgb.DMatrix,
     alphas: list[float],
 ) -> tuple[str, float]:
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
-    return CHECK_LOSS, loss
+    return "check_loss", loss
 
 
 def _lgb_eval_loss(
     y_pred: np.ndarray,
-    dtrain: DtrainLike,
+    dtrain: lgb.Dataset | xgb.DMatrix,
     alphas: list[float],
 ) -> tuple[str, float, bool]:
     loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
-    return CHECK_LOSS, loss, False
+    return "check_loss", loss, False
 
 
 def validate_parameters(objective: ObjectiveName, delta: float, epsilon: float) -> None:
@@ -155,8 +148,8 @@ def get_fobj_function(
     alphas: list[float],
     delta: float,
     epsilon: float,
-) -> ObjLike:
-    objective_mapping: dict[ObjectiveName, ObjLike] = {
+) -> Callable:
+    objective_mapping: dict[ObjectiveName, Callable] = {
         ObjectiveName.check: partial(
             check_loss_grad_hess, weight=weight, alphas=alphas
         ),
@@ -170,8 +163,8 @@ def get_fobj_function(
     return objective_mapping[objective]
 
 
-def get_feval_function(model: ModelName, alphas: list[float]) -> EvalLike:
-    model_mapping: dict[ModelName, EvalLike] = {
+def get_feval_function(model: ModelName, alphas: list[float]) -> Callable:
+    model_mapping: dict[ModelName, Callable] = {
         ModelName.lightgbm: partial(_lgb_eval_loss, alphas=alphas),
         ModelName.xgboost: partial(_xgb_eval_loss, alphas=alphas),
     }

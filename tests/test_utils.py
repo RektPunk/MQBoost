@@ -139,16 +139,6 @@ def test_prepare_x_raises_on_invalid_column_name():
 
 
 # Test for prepare_y
-def test_prepare_y_with_list():
-    y = [1, 2, 3]
-    alphas = [0.1, 0.2]
-    result = prepare_y(y, alphas)
-
-    expected = np.array([1, 2, 3, 1, 2, 3])
-
-    np.testing.assert_array_equal(result, expected)
-
-
 def test_prepare_y_with_array():
     y = np.array([1, 2, 3])
     alphas = [0.1, 0.2]

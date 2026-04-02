@@ -3,7 +3,13 @@ name = "mqboost"
 version = "1.0.0"
 description = "Monotonic composite quantile gradient boost regressor"
 readme = "README.md"
+authors = [
+    {name = "RektPunk", email = "rektpunk@gmail.com"},
+]
 requires-python = ">=3.9"
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
 dependencies = [
     "lightgbm>=4.6.0",
     "numpy>=2.0.2",
@@ -11,6 +17,9 @@ dependencies = [
     "scikit-learn>=1.6.1",
     "xgboost>=2.1.4",
 ]
+
+[project.urls]
+repository = "https://github.com/RektPunk/MQBoost"
 
 [dependency-groups]
 dev = [

@@ -17,20 +17,20 @@ from mqboost.base import (
 
 # Test Enum behavior
 def test_model_name_enum():
-    assert ModelName.get("lightgbm") == ModelName.lightgbm
-    assert ModelName.get("xgboost") == ModelName.xgboost
+    assert ModelName["lightgbm"] == ModelName.lightgbm
+    assert ModelName["xgboost"] == ModelName.xgboost
 
-    with pytest.raises(ValueError):
-        ModelName.get("invalid_model")
+    with pytest.raises(KeyError):
+        ModelName["invalid_model"]
 
 
 def test_objective_name_enum():
-    assert ObjectiveName.get("check") == ObjectiveName.check
-    assert ObjectiveName.get("huber") == ObjectiveName.huber
-    assert ObjectiveName.get("approx") == ObjectiveName.approx
+    assert ObjectiveName["check"] == ObjectiveName.check
+    assert ObjectiveName["huber"] == ObjectiveName.huber
+    assert ObjectiveName["approx"] == ObjectiveName.approx
 
-    with pytest.raises(ValueError):
-        ObjectiveName.get("invalid_objective")
+    with pytest.raises(KeyError):
+        ObjectiveName["invalid_objective"]
 
 
 # Test FUNC_TYPE

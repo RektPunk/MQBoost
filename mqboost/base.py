@@ -1,19 +1,8 @@
 from enum import StrEnum
-from typing import Callable
+from typing import Any
 
 import lightgbm as lgb
-import numpy.typing as npt
-import pandas as pd
 import xgboost as xgb
-
-# Type
-XdataLike = pd.DataFrame | pd.Series | npt.NDArray
-YdataLike = pd.Series | npt.NDArray
-AlphaLike = list[float] | float
-ModelLike = lgb.basic.Booster | xgb.Booster
-DtrainLike = lgb.basic.Dataset | xgb.DMatrix
-ParamsLike = dict[str, float | int | str | bool | list[int]]
-WeightLike = list[float] | list[int] | npt.NDArray | pd.Series
 
 
 # Name
@@ -35,11 +24,11 @@ class TypeName(StrEnum):
 
 
 # Functions
-def _lgb_predict_dtype(data: XdataLike):
+def _lgb_predict_dtype(data: Any):
     return data
 
 
-FUNC_TYPE: dict[ModelName, dict[TypeName, Callable]] = {
+FUNC_TYPE: dict[ModelName, dict[TypeName, Any]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
         TypeName.predict_dtype: _lgb_predict_dtype,

@@ -1,8 +1,11 @@
+from typing import Any
+
 import lightgbm as lgb
 import numpy as np
+import numpy.typing as npt
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, ObjectiveName, ParamsLike
+from mqboost.base import FittingException, ModelName, ObjectiveName
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
@@ -39,7 +42,7 @@ class MQRegressor:
 
     def __init__(
         self,
-        params: ParamsLike,
+        params: dict[str, Any],
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
         delta: float = 0.01,
@@ -90,6 +93,12 @@ class MQRegressor:
         )
         if self.__is_lgb:
             params.update({"objective": self._MQObj.fobj})
+            if not (
+                isinstance(dataset.dtrain, lgb.Dataset)
+                and isinstance(_eval_set, lgb.Dataset)
+            ):
+                raise ValueError("dtrain must be a lightgbm Dataset")
+
             self.model = lgb.train(
                 train_set=dataset.dtrain,
                 params=params,
@@ -113,7 +122,7 @@ class MQRegressor:
     def predict(
         self,
         dataset: MQDataset,
-    ) -> np.ndarray:
+    ) -> npt.NDArray:
         """
         Predict quantiles for the dataset.
         Args:
@@ -122,7 +131,9 @@ class MQRegressor:
             np.ndarray: The predicted quantiles.
         """
         self.__predict_available()
-        _pred = self.model.predict(data=dataset.dpredict) + self._label_mean
+        _pred = (
+            np.asanyarray(self.model.predict(data=dataset.dpredict)) + self._label_mean
+        )
         _pred = _pred.reshape(len(dataset.alphas), dataset.nrow)
         return _pred
 
@@ -132,19 +143,18 @@ class MQRegressor:
             raise FittingException("Fit must be executed first.")
 
     @property
-    def MQObj(self) -> MQObjective:
-        """Get the MQObjective instance."""
-        return self._MQObj
-
-    @property
-    def feature_importance(self) -> dict[str, int]:
+    def feature_importance(self) -> dict[str, Any]:
         self.__predict_available()
-        importances = {str(k): 0 for k in self._colnames}
+        importances: dict[str, Any] = {str(k): 0 for k in self._colnames}
         if self.__is_lgb:
+            if not isinstance(self.model, lgb.Booster):
+                raise TypeError("model must be a lightgbm Booster")
             _importance = self.model.feature_importance(importance_type="gain").tolist()
             importances.update({str(k): v for k, v in zip(self._colnames, _importance)})
             return importances
         else:
+            if not isinstance(self.model, xgb.Booster):
+                raise TypeError("model must be a xgboost Booster")
             importances.update(self.model.get_score(importance_type="gain"))
             return importances
 
