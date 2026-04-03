@@ -19,8 +19,18 @@
   </a>
 </p>
 
+**MQBoost** is a gradient boosting-based framework for simultaneous multi-quantile regression with monotonicity constraints (non-crossing quantiles).
+It is built on top of  [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks, enabling efficient and scalable training while ensuring valid quantile estimates.
 
-**MQBoost** introduces an advanced model for estimating multiple quantiles while ensuring the non-crossing condition (monotone quantile condition). This model harnesses the capabilities of both [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks.
+# Why MQBoost?
+Standard quantile regression models often suffer from:
+- Quantile crossing (e.g., 90% quantile < 50% quantile)
+- Independent training per quantile → inconsistent predictions
+
+**MQBoost** solves this by:
+[x] Learning multiple quantiles jointly
+[x] Enforcing monotonicity across quantiles
+[x] Leveraging efficient boosting frameworks
 
 # Installation
 Install using pip:
@@ -30,7 +40,7 @@ pip install mqboost
 
 # Usage
 ## Features
-- **MQDataset**: Encapsulates the dataset used for MQRegressor and MQOptimizer.
+- **MQDataset**: Encapsulates the dataset used for MQRegressor.
 - **MQRegressor**: Custom multiple quantile estimator with preserving monotonicity among quantiles.
 
 ## Example
