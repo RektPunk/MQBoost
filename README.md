@@ -28,9 +28,9 @@ Standard quantile regression models often suffer from:
 - Independent training per quantile → inconsistent predictions
 
 **MQBoost** solves this by:
-[x] Learning multiple quantiles jointly
-[x] Enforcing monotonicity across quantiles
-[x] Leveraging efficient boosting frameworks
+- Learning multiple quantiles jointly
+- Enforcing monotonicity across quantiles
+- Leveraging efficient boosting frameworks
 
 # Installation
 Install using pip:
