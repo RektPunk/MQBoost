@@ -22,8 +22,6 @@
 
 **MQBoost** introduces an advanced model for estimating multiple quantiles while ensuring the non-crossing condition (monotone quantile condition). This model harnesses the capabilities of both [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks.
 
-By implementing the hyperparameter optimization prowess of [Optuna](https://github.com/optuna/optuna), the model achieves great performance. Optuna's optimization algorithms fine-tune the hyperparameters, ensuring the model operates efficiently.
-
 # Installation
 Install using pip:
 ```bash
@@ -34,8 +32,6 @@ pip install mqboost
 ## Features
 - **MQDataset**: Encapsulates the dataset used for MQRegressor and MQOptimizer.
 - **MQRegressor**: Custom multiple quantile estimator with preserving monotonicity among quantiles.
-- **MQOptimizer**: Optimize hyperparameters for MQRegressor with Optuna.
-
 
 ## Example
 Please refer to the [**Examples**](https://github.com/RektPunk/MQBoost/tree/main/examples) provided for further clarification.

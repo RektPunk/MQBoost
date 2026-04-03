@@ -12,7 +12,6 @@ from mqboost.base import (
     ModelName,
     TypeName,
 )
-from mqboost.encoder import MQLabelEncoder
 from mqboost.utils import alpha_validate, prepare_x, prepare_y, to_dataframe
 
 
@@ -48,15 +47,6 @@ class MQDataset:
         self.predict_dtype = _funcs[TypeName.predict_dtype]
 
         _data = to_dataframe(data)
-        self.encoders: dict[str, MQLabelEncoder] = {}
-        for col in _data.select_dtypes(exclude="number").columns:
-            _series = _data[col]
-            if not isinstance(_series, pd.Series):
-                continue
-            _encoder = MQLabelEncoder()
-            _data[col] = _encoder.fit_transform(_series)
-            self.encoders.update({col: _encoder})
-
         self.data = prepare_x(x=_data, alphas=self.alphas)
         self.columns = self.data.columns
         if label is not None:
