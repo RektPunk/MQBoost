@@ -4,7 +4,12 @@ import pandas as pd
 import pytest
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, ValidationException
+from mqboost.base import (
+    FittingException,
+    ModelName,
+    ValidationException,
+    _lgb_predict_dtype,
+)
 from mqboost.dataset import MQDataset
 from mqboost.encoder import MQLabelEncoder
 
@@ -80,12 +85,12 @@ def test_mqdataset_train_predict_dtype():
     data = pd.DataFrame({"feature_1": [1, 2, 3], "feature_2": [4, 5, 6]})
     alphas = [0.1, 0.2]
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.lightgbm.value)
-    assert dataset.train_dtype == dataset._train_dtype
-    assert dataset.predict_dtype == dataset._predict_dtype
+    assert dataset.train_dtype == lgb.Dataset
+    assert dataset.predict_dtype == _lgb_predict_dtype
 
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
-    assert dataset.train_dtype == dataset._train_dtype
-    assert dataset.predict_dtype == dataset._predict_dtype
+    assert dataset.train_dtype == xgb.DMatrix
+    assert dataset.predict_dtype == xgb.DMatrix
 
 
 def test_mqdataset_columns_property():

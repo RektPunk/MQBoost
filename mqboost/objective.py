@@ -172,8 +172,7 @@ def get_feval_function(model: ModelName, alphas: list[float]) -> Callable:
 
 
 class MQObjective:
-    """
-    MQObjective provides a monotone quantile objective and evaluation function for models.
+    """MQObjective provides a monotone quantile objective and evaluation function for models.
 
     Attributes:
         alphas (list[float]): List of quantile levels for the model.
@@ -182,9 +181,6 @@ class MQObjective:
         delta (float): The delta parameter used for the 'huber' loss.
         epsilon (float): The epsilon parameter used for the 'approx' loss.
         weight (np.ndarray): The weight for each instance (if provided).
-    Properties:
-        fobj (Callable): The objective function to be minimized.
-        feval (Callable): The evaluation function used during training.
     """
 
     def __init__(
@@ -198,21 +194,11 @@ class MQObjective:
     ) -> None:
         """Initialize the MQObjective."""
         validate_parameters(objective=objective, delta=delta, epsilon=epsilon)
-        self._fobj = get_fobj_function(
+        self.fobj = get_fobj_function(
             objective=objective,
             weight=weight,
             alphas=alphas,
             delta=delta,
             epsilon=epsilon,
         )
-        self._feval = get_feval_function(model=model, alphas=alphas)
-
-    @property
-    def fobj(self) -> Callable:
-        """Get the objective function to be minimized."""
-        return self._fobj
-
-    @property
-    def feval(self) -> Callable:
-        """Get the evaluation function used during training."""
-        return self._feval
+        self.feval = get_feval_function(model=model, alphas=alphas)

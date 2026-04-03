@@ -35,9 +35,6 @@ class MQRegressor:
             Fits the regressor to the provided dataset, optionally evaluating on a separate validation set.
         predict(dataset):
             Predicts quantiles for the given dataset.
-
-    Property:
-        MQObj: Returns the MQObjective instance.
     """
 
     def __init__(

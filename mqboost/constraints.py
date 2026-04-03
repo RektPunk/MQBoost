@@ -16,8 +16,6 @@ def set_monotone_constraints(
         params (dict)
         columns (pd.Index)
         model_name (ModelName)
-    Raises:
-        ValidationException: when "objective" is in params.keys()
     Returns:
         dict[str, Any]
     """

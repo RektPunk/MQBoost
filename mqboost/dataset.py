@@ -28,18 +28,6 @@ class MQDataset:
         label (pd.Series | np.ndarray): The target labels (if provided).
         weight (list[float] | list[int] | np.ndarray | pd.Series): Weight for each instance (if provided).
         model (str): The model type (LightGBM or XGBoost).
-
-    Property:
-        train_dtype: Returns the data type function for training data.
-        predict_dtype: Returns the data type function for prediction data.
-        columns: Returns the column names of the input features.
-        nrow: Returns the number of rows in the dataset.
-        data: Returns the input features.
-        label: Returns the target labels.
-        alphas: Returns the list of quantile levels.
-        weight: Returns the weight vector for each instance.
-        dtrain: Returns the training data in the required format for the model.
-        dpredict: Returns the prediction data in the required format for the model.
     """
 
     def __init__(
@@ -52,12 +40,12 @@ class MQDataset:
     ) -> None:
         """Initialize the MQDataset."""
         self._model = ModelName[model]
-        self._nrow = len(data)
-        self._alphas = alpha_validate(alphas)
+        self.nrow = len(data)
+        self.alphas = alpha_validate(alphas)
 
         _funcs = FUNC_TYPE[self._model]
-        self._train_dtype = _funcs[TypeName.train_dtype]
-        self._predict_dtype = _funcs[TypeName.predict_dtype]
+        self.train_dtype = _funcs[TypeName.train_dtype]
+        self.predict_dtype = _funcs[TypeName.predict_dtype]
 
         _data = to_dataframe(data)
         self.encoders: dict[str, MQLabelEncoder] = {}
@@ -69,46 +57,16 @@ class MQDataset:
             _data[col] = _encoder.fit_transform(_series)
             self.encoders.update({col: _encoder})
 
-        self._data = prepare_x(x=_data, alphas=self._alphas)
-        self._columns = self._data.columns
+        self.data = prepare_x(x=_data, alphas=self.alphas)
+        self.columns = self.data.columns
         if label is not None:
             self._label_mean = label.mean()
-            self._label = prepare_y(y=label - self._label_mean, alphas=self._alphas)
+            self._label = prepare_y(y=label - self._label_mean, alphas=self.alphas)
             self._is_none_label = False
 
         if weight is not None:
             _weight = np.array(weight) if not isinstance(weight, np.ndarray) else weight
-            self._weight = prepare_y(y=_weight, alphas=self._alphas)
-
-    @property
-    def train_dtype(self):
-        """Get the data type function for training data."""
-        return self._train_dtype
-
-    @property
-    def predict_dtype(self):
-        """Get the data type function for prediction data."""
-        return self._predict_dtype
-
-    @property
-    def columns(self) -> pd.Index:
-        """Get the column names of the input features."""
-        return self._columns
-
-    @property
-    def nrow(self) -> int:
-        """Get the number of rows in the dataset."""
-        return self._nrow
-
-    @property
-    def data(self) -> pd.DataFrame:
-        """Get the raw input features."""
-        return self._data
-
-    @property
-    def alphas(self) -> list[float]:
-        """Get the list of quantile levels."""
-        return self._alphas
+            self._weight = prepare_y(y=_weight, alphas=self.alphas)
 
     @property
     def label(self) -> npt.NDArray:
@@ -131,12 +89,12 @@ class MQDataset:
     def dtrain(self) -> lgb.Dataset | xgb.DMatrix:
         """Get the training data in the required format for the model."""
         self.__label_available()
-        return self._train_dtype(data=self._data, label=self._label, weight=self.weight)
+        return self.train_dtype(data=self.data, label=self._label, weight=self.weight)
 
     @property
     def dpredict(self) -> lgb.Dataset | xgb.DMatrix | Callable:
         """Get the prediction data in the required format for the model."""
-        return self._predict_dtype(data=self._data)
+        return self.predict_dtype(data=self.data)
 
     def __label_available(self) -> None:
         """Check if the label is available, raises an exception if not."""
