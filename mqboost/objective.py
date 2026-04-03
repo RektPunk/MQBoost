@@ -115,8 +115,7 @@ def eval_check_loss(
     y_pred: np.ndarray,
     dtrain: lgb.Dataset | xgb.DMatrix,
     alphas: list[float],
-    return_is_higher_better: bool,
-) -> tuple[str, float, bool] | tuple[str, float]:
+) -> float:
     """Evaluate the check loss function."""
     len_alpha = len(alphas)
     y_train_reshaped, y_pred_reshaped = train_pred_reshape(
@@ -127,10 +126,7 @@ def eval_check_loss(
         _err_for_alpha = y_train_reshaped[alpha_inx] - y_pred_reshaped[alpha_inx]
         _loss = calc_rho(error=_err_for_alpha, alpha=alphas[alpha_inx])
         loss += float(np.mean(_loss))
-
-    if return_is_higher_better:
-        return "check_loss", loss, False
-    return "check_loss", loss
+    return loss
 
 
 def build_fobj(
@@ -140,6 +136,12 @@ def build_fobj(
     epsilon: float,
     weight: np.ndarray | None,
 ) -> Callable:
+    if objective == ObjectiveName.approx:
+        epsilon_validate(epsilon)
+
+    if objective == ObjectiveName.huber:
+        delta_validate(delta)
+
     def fobj(y_pred, dtrain):
         if objective == ObjectiveName.check:
             return check_loss_grad_hess(
@@ -150,7 +152,6 @@ def build_fobj(
             )
 
         elif objective == ObjectiveName.huber:
-            delta_validate(delta)
             return huber_loss_grad_hess(
                 y_pred=y_pred,
                 dtrain=dtrain,
@@ -160,7 +161,6 @@ def build_fobj(
             )
 
         elif objective == ObjectiveName.approx:
-            epsilon_validate(epsilon)
             return approx_loss_grad_hess(
                 y_pred=y_pred,
                 dtrain=dtrain,
@@ -168,20 +168,17 @@ def build_fobj(
                 weight=weight,
                 epsilon=epsilon,
             )
-        else:
-            raise ValueError(f"Unsupported objective: {objective}")
 
     return fobj
 
 
 def build_feval(model: ModelName, alphas: list[float]) -> Callable:
     def feval(y_pred, dtrain):
+        loss = eval_check_loss(y_pred, dtrain, alphas)
         if model == ModelName.lightgbm:
-            return eval_check_loss(y_pred, dtrain, alphas, return_is_higher_better=True)
+            return "check_loss", loss, False
         elif model == ModelName.xgboost:
-            return eval_check_loss(
-                y_pred, dtrain, alphas, return_is_higher_better=False
-            )
+            return "check_loss", loss
 
     return feval
 

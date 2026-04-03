@@ -4,11 +4,10 @@ import pytest
 from mqboost.base import ModelName, ObjectiveName, ValidationException
 from mqboost.objective import (
     MQObjective,
-    _eval_check_loss,
-    _lgb_eval_loss,
-    _xgb_eval_loss,
     approx_loss_grad_hess,
+    build_feval,
     check_loss_grad_hess,
+    eval_check_loss,
     huber_loss_grad_hess,
 )
 
@@ -153,7 +152,7 @@ def test_approx_loss_grad_hess(dummy_data, epsilon, expected_grads, expected_hes
 def test_eval_check_loss(dummy_data):
     """Test evaluation of the check loss."""
     dtrain = dummy_data(y_true)
-    loss = _eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
+    loss = eval_check_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
     np.testing.assert_almost_equal(loss, 0.036)
     assert isinstance(loss, float)
     assert loss > 0
@@ -162,7 +161,7 @@ def test_eval_check_loss(dummy_data):
 def test_xgb_eval_loss(dummy_data):
     """Test XGBoost evaluation function."""
     dtrain = dummy_data(y_true)
-    metric_name, loss = _xgb_eval_loss(y_pred=y_pred, dtrain=dtrain, alphas=alphas)
+    metric_name, loss = build_feval(ModelName.xgboost, alphas)(y_pred, dtrain)
     assert metric_name == "check_loss"
     assert isinstance(loss, float)
 
@@ -170,9 +169,7 @@ def test_xgb_eval_loss(dummy_data):
 def test_lgb_eval_loss(dummy_data):
     """Test LightGBM evaluation function."""
     dtrain = dummy_data(y_true)
-    metric_name, loss, higher_better = _lgb_eval_loss(
-        y_pred=y_pred, dtrain=dtrain, alphas=alphas
-    )
+    metric_name, loss, higher_better = build_feval(ModelName.lightgbm, alphas)(y_pred, dtrain)
     assert metric_name == "check_loss"
     assert isinstance(loss, float)
     assert higher_better is False

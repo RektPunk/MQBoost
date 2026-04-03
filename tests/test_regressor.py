@@ -53,11 +53,11 @@ def test_mqregressor_initialization():
         delta=0.01,
         epsilon=1e-5,
     )
-    assert regressor._params == params
-    assert regressor._model == ModelName.lightgbm
-    assert regressor._objective == ObjectiveName.check
-    assert regressor._delta == 0.01
-    assert regressor._epsilon == 1e-5
+    assert regressor.params == params
+    assert regressor.model_name == ModelName.lightgbm
+    assert regressor.objective == ObjectiveName.check
+    assert regressor.delta == 0.01
+    assert regressor.epsilon == 1e-5
 
 
 def test_invalid_model_initialization():
