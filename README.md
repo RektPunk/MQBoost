@@ -22,7 +22,7 @@
 **MQBoost** is a gradient boosting-based framework for simultaneous multi-quantile regression with monotonicity constraints (non-crossing quantiles).
 It is built on top of  [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks, enabling efficient and scalable training while ensuring valid quantile estimates.
 
-# Why MQBoost?
+### Why MQBoost?
 Standard quantile regression models often suffer from:
 - Quantile crossing (e.g., 90% quantile < 50% quantile)
 - Independent training per quantile → inconsistent predictions
