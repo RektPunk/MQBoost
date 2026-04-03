@@ -8,7 +8,6 @@ from mqboost.base import (
     FittingException,
     ModelName,
     ValidationException,
-    _lgb_predict_dtype,
 )
 from mqboost.dataset import MQDataset
 
@@ -85,7 +84,7 @@ def test_mqdataset_train_predict_dtype():
     alphas = [0.1, 0.2]
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.lightgbm.value)
     assert dataset.train_dtype == lgb.Dataset
-    assert dataset.predict_dtype == _lgb_predict_dtype
+    pd.testing.assert_frame_equal(dataset.predict_dtype(data), data)
 
     dataset = MQDataset(alphas=alphas, data=data, model=ModelName.xgboost.value)
     assert dataset.train_dtype == xgb.DMatrix

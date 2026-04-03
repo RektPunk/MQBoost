@@ -10,8 +10,7 @@ def set_monotone_constraints(
     columns: pd.Index,
     model_name: ModelName,
 ) -> dict[str, Any]:
-    """
-    Set monotone constraints in params
+    """Set monotone constraints in params
     Args:
         params (dict)
         columns (pd.Index)

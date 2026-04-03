@@ -89,7 +89,6 @@ def test_mqregressor_fit_lgb(dummy_dataset_lgb, dummy_eval_set_lgb):
     params = {"learning_rate": 0.1, "num_leaves": 31}
     regressor = MQRegressor(params=params, model=ModelName.lightgbm.value)
     regressor.fit(dataset=dummy_dataset_lgb, eval_set=dummy_eval_set_lgb)
-
     assert regressor._fitted is True
     assert isinstance(regressor.model, lgb.Booster)
 
@@ -98,7 +97,6 @@ def test_mqregressor_fit_xgb(dummy_dataset_xgb, dummy_eval_set_xgb):
     params = {"learning_rate": 0.1, "max_depth": 6}
     regressor = MQRegressor(params=params, model=ModelName.xgboost.value)
     regressor.fit(dataset=dummy_dataset_xgb, eval_set=dummy_eval_set_xgb)
-
     assert regressor._fitted is True
     assert isinstance(regressor.model, xgb.Booster)
 
@@ -106,7 +104,6 @@ def test_mqregressor_fit_xgb(dummy_dataset_xgb, dummy_eval_set_xgb):
 def test_fit_without_eval_set_lgb(dummy_dataset_lgb):
     params = {"learning_rate": 0.1, "num_leaves": 31}
     regressor = MQRegressor(params=params, model=ModelName.lightgbm.value)
-
     regressor.fit(dataset=dummy_dataset_lgb)
     assert regressor._fitted is True
     assert isinstance(regressor.model, lgb.Booster)
@@ -116,7 +113,6 @@ def test_fit_without_eval_set_xgb(dummy_dataset_xgb):
     params = {"learning_rate": 0.1, "max_depth": 6}
     regressor = MQRegressor(params=params, model=ModelName.xgboost.value)
     regressor.fit(dataset=dummy_dataset_xgb)
-
     assert regressor._fitted is True
     assert isinstance(regressor.model, xgb.Booster)
 
@@ -125,7 +121,6 @@ def test_fit_without_eval_set_xgb(dummy_dataset_xgb):
 def test_predict_lgb(dummy_dataset_lgb):
     params = {"learning_rate": 0.1, "num_leaves": 31}
     regressor = MQRegressor(params=params, model=ModelName.lightgbm.value)
-
     regressor.fit(dataset=dummy_dataset_lgb)
     predictions = regressor.predict(dataset=dummy_dataset_lgb)
     assert predictions.shape == (len(dummy_dataset_lgb.alphas), dummy_dataset_lgb.nrow)
@@ -134,17 +129,14 @@ def test_predict_lgb(dummy_dataset_lgb):
 def test_predict_xgb(dummy_dataset_xgb):
     params = {"learning_rate": 0.1, "max_depth": 6}
     regressor = MQRegressor(params=params, model=ModelName.xgboost.value)
-
     regressor.fit(dataset=dummy_dataset_xgb)
     predictions = regressor.predict(dataset=dummy_dataset_xgb)
-
     assert predictions.shape == (len(dummy_dataset_xgb.alphas), dummy_dataset_xgb.nrow)
 
 
 def test_predict_without_fit(dummy_dataset_lgb):
     params = {"learning_rate": 0.1, "num_leaves": 31}
     regressor = MQRegressor(params=params, model=ModelName.lightgbm.value)
-
     with pytest.raises(FittingException):
         regressor.predict(dataset=dummy_dataset_lgb)
 
@@ -153,7 +145,6 @@ def test_predict_without_fit(dummy_dataset_lgb):
 def test_monotone_constraints_called_lgb(dummy_dataset_lgb):
     params = {"learning_rate": 0.1, "num_leaves": 31}
     regressor = MQRegressor(params=params, model=ModelName.lightgbm.value)
-
     regressor.fit(dataset=dummy_dataset_lgb)
     predictions = regressor.predict(dataset=dummy_dataset_lgb)
     assert np.all(
@@ -167,7 +158,6 @@ def test_monotone_constraints_called_lgb(dummy_dataset_lgb):
 def test_monotone_constraints_called_xgb(dummy_dataset_xgb):
     params = {"learning_rate": 0.1, "max_depth": 6}
     regressor = MQRegressor(params=params, model=ModelName.xgboost.value)
-
     regressor.fit(dataset=dummy_dataset_xgb)
     predictions = regressor.predict(dataset=dummy_dataset_xgb)
     assert np.all(
@@ -189,7 +179,6 @@ def test_feature_importance_after_fit(dummy_dataset_lgb):
     gbm_model = MQRegressor(params=params)
     gbm_model.fit(dataset=dummy_dataset_lgb)
     feature_importances = gbm_model.feature_importance
-
     assert isinstance(feature_importances, dict), (
         "Feature importances should be a dictionary"
     )
@@ -208,7 +197,6 @@ def test_feature_importance_positive(dummy_dataset_lgb):
     gbm_model = MQRegressor(params=params)
     gbm_model.fit(dataset=dummy_dataset_lgb)
     feature_importances = gbm_model.feature_importance
-
     assert all([importance >= 0 for importance in feature_importances.values()]), (
         "All importance should be positive."
     )

@@ -5,7 +5,6 @@ import lightgbm as lgb
 import xgboost as xgb
 
 
-# Name
 class ModelName(StrEnum):
     lightgbm = "lightgbm"
     xgboost = "xgboost"
@@ -23,15 +22,10 @@ class TypeName(StrEnum):
     constraints_type = "constraints_type"
 
 
-# Functions
-def _lgb_predict_dtype(data: Any):
-    return data
-
-
 FUNC_TYPE: dict[ModelName, dict[TypeName, Any]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
-        TypeName.predict_dtype: _lgb_predict_dtype,
+        TypeName.predict_dtype: lambda data: data,
         TypeName.constraints_type: list,
     },
     ModelName.xgboost: {

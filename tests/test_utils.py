@@ -111,7 +111,6 @@ def test_prepare_x_with_series():
             "_tau": [0.1, 0.1, 0.1, 0.2, 0.2, 0.2],
         }
     )
-
     pd.testing.assert_frame_equal(result, expected)
 
 
@@ -126,14 +125,12 @@ def test_prepare_x_with_array():
             "_tau": [0.1, 0.1, 0.2, 0.2],
         }
     )
-
     pd.testing.assert_frame_equal(result, expected)
 
 
 def test_prepare_x_raises_on_invalid_column_name():
     x = pd.DataFrame({"_tau": [1, 2], "feature_1": [3, 4]})
     alphas = [0.1, 0.2]
-
     with pytest.raises(ValidationException, match="Column name '_tau' is not allowed."):
         prepare_x(x, alphas)
 
@@ -143,9 +140,7 @@ def test_prepare_y_with_array():
     y = np.array([1, 2, 3])
     alphas = [0.1, 0.2]
     result = prepare_y(y, alphas)
-
     expected = np.array([1, 2, 3, 1, 2, 3])
-
     np.testing.assert_array_equal(result, expected)
 
 
@@ -153,9 +148,7 @@ def test_prepare_y_with_series():
     y = pd.Series([1, 2, 3])
     alphas = [0.1, 0.2]
     result = prepare_y(y, alphas)
-
     expected = np.array([1, 2, 3, 1, 2, 3])
-
     np.testing.assert_array_equal(result, expected)
 
 

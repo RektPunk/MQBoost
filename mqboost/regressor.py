@@ -59,8 +59,7 @@ class MQRegressor:
         eval_set: MQDataset | None = None,
         **kwargs,
     ) -> None:
-        """
-        Fit the regressor to the dataset.
+        """Fit the regressor to the dataset.
         Args:
             dataset (MQDataset): The dataset to fit the model on.
             eval_set (Optional[MQDataset]):
@@ -120,8 +119,7 @@ class MQRegressor:
         self,
         dataset: MQDataset,
     ) -> npt.NDArray:
-        """
-        Predict quantiles for the dataset.
+        """Predict quantiles for the dataset.
         Args:
             dataset (MQDataset): The dataset to make predictions on.
         Returns:

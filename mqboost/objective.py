@@ -10,20 +10,21 @@ from mqboost.utils import delta_validate, epsilon_validate
 
 
 def calc_rho(error: npt.NDArray, alpha: float) -> npt.NDArray:
+    """Compute rho for the given error and alpha."""
     return (alpha - (error < 0).astype(int)) * error
 
 
-# check loss
 def calc_check_grad_hess(
     error: npt.NDArray, alpha: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
+    """Compute gradient and Hessian for the check loss."""
     return (error < 0).astype(int) - alpha, np.ones_like(error)
 
 
-# Huber loss
 def calc_huber_grad_hess(
     error: npt.NDArray, alpha: float, delta: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
+    """Compute gradient and Hessian for the Huber loss."""
     abs_error = np.abs(error)
     smaller_delta = (abs_error <= delta).astype(int)
     bigger_delta = (abs_error > delta).astype(int)
@@ -32,10 +33,10 @@ def calc_huber_grad_hess(
     return rho_val * smaller_delta + check_grad * bigger_delta, check_hess
 
 
-# Approx loss (MM loss)
 def calc_approx_grad_hess(
     error: npt.NDArray, alpha: float, epsilon: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
+    """Compute gradient and Hessian for the approximate loss (MM loss)."""
     approx_grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
     approx_hess = 1 / (2 * (epsilon + np.abs(error)))
     return approx_grad, approx_hess
@@ -53,7 +54,6 @@ def train_pred_reshape(
     return y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
 
 
-# Compute gradient hessian logic
 def compute_grad_hess_single_alpha(
     y_true: npt.NDArray,
     y_pred: npt.NDArray,
@@ -62,13 +62,16 @@ def compute_grad_hess_single_alpha(
     n: int,
     **kwargs,
 ) -> tuple[npt.NDArray, npt.NDArray]:
+    """Compute gradient and Hessian using the given function for a single alpha value."""
     error = y_true - y_pred
     grad, hess = calc_grad_hess_fn(error=error, alpha=alpha, **kwargs)
     return grad / n, hess / n
 
 
-def compute_grad_hess(calc_grad_hess_fn: Callable) -> Callable:
-    """Return computing gradient hessian function."""
+def compute_grad_hess(
+    calc_grad_hess_fn: Callable,
+) -> Callable[...,]:
+    """Return a function that computes gradient and Hessian for a given calc_grad_hess_fn."""
 
     def _compute_grads_hess(
         y_pred: npt.NDArray,
@@ -135,14 +138,17 @@ def build_fobj(
     delta: float,
     epsilon: float,
     weight: np.ndarray | None,
-) -> Callable:
+) -> Callable[..., tuple[npt.NDArray, npt.NDArray]]:
+    """Return fobj function."""
     if objective == ObjectiveName.approx:
         epsilon_validate(epsilon)
 
     if objective == ObjectiveName.huber:
         delta_validate(delta)
 
-    def fobj(y_pred, dtrain):
+    def fobj(
+        y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix
+    ) -> tuple[npt.NDArray, npt.NDArray]:
         if objective == ObjectiveName.check:
             return check_loss_grad_hess(
                 y_pred=y_pred,
@@ -172,8 +178,12 @@ def build_fobj(
     return fobj
 
 
-def build_feval(model: ModelName, alphas: list[float]) -> Callable:
-    def feval(y_pred, dtrain):
+def build_feval(
+    model: ModelName, alphas: list[float]
+) -> Callable[[npt.NDArray, lgb.Dataset | xgb.DMatrix], tuple]:
+    """Return feval function."""
+
+    def feval(y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix) -> tuple:
         loss = eval_check_loss(y_pred, dtrain, alphas)
         if model == ModelName.lightgbm:
             return "check_loss", loss, False
@@ -184,17 +194,6 @@ def build_feval(model: ModelName, alphas: list[float]) -> Callable:
 
 
 class MQObjective:
-    """MQObjective provides a monotone quantile objective and evaluation function for models.
-
-    Attributes:
-        alphas (list[float]): List of quantile levels for the model.
-        objective (ObjectiveName): The objective function type (either 'huber' or 'check').
-        model (ModelName): The model type (either 'lightgbm' or 'xgboost').
-        delta (float): The delta parameter used for the 'huber' loss.
-        epsilon (float): The epsilon parameter used for the 'approx' loss.
-        weight (np.ndarray): The weight for each instance (if provided).
-    """
-
     def __init__(
         self,
         alphas: list[float],

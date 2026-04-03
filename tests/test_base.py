@@ -11,7 +11,6 @@ from mqboost.base import (
     ObjectiveName,
     TypeName,
     ValidationException,
-    _lgb_predict_dtype,
 )
 
 
@@ -50,20 +49,19 @@ def test_func_type_for_lgb():
     )
     assert isinstance(FUNC_TYPE[ModelName.lightgbm][TypeName.constraints_type](), list)
 
+    data = pd.DataFrame([1, 2, 3])
+    assert FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](data) is data
+
+    array_data = np.array([1, 2, 3])
+    assert (
+        FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](array_data) is array_data
+    )
+
 
 def test_func_type_for_xgb():
     assert FUNC_TYPE[ModelName.xgboost][TypeName.train_dtype] == xgb.DMatrix
     assert FUNC_TYPE[ModelName.xgboost][TypeName.predict_dtype] == xgb.DMatrix
     assert isinstance(FUNC_TYPE[ModelName.xgboost][TypeName.constraints_type](), tuple)
-
-
-# Test _lgb_predict_dtype
-def test_lgb_predict_dtype():
-    data = pd.DataFrame([1, 2, 3])
-    assert _lgb_predict_dtype(data) is data
-
-    array_data = np.array([1, 2, 3])
-    assert _lgb_predict_dtype(array_data) is array_data
 
 
 # Test custom exceptions
