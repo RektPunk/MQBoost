@@ -47,11 +47,11 @@ class MQRegressor:
     ) -> None:
         """Initialize the MQRegressor."""
         params_validate(params=params)
-        self._params = params
-        self._model = ModelName[model]
-        self._objective = ObjectiveName[objective]
-        self._delta = delta
-        self._epsilon = epsilon
+        self.params = params
+        self.model_name = ModelName[model]
+        self.objective = ObjectiveName[objective]
+        self.delta = delta
+        self.epsilon = epsilon
 
     def fit(
         self,
@@ -69,38 +69,38 @@ class MQRegressor:
                 train parameters.
         """
         if eval_set:
-            _eval_set = eval_set.dtrain
+            eval_set_dtrain = eval_set.dtrain
         else:
-            _eval_set = dataset.dtrain
+            eval_set_dtrain = dataset.dtrain
 
         self._label_mean = dataset.label_mean
 
         params = set_monotone_constraints(
-            params=self._params,
+            params=self.params,
             columns=dataset.columns,
-            model_name=self._model,
+            model_name=self.model_name,
         )
-        self._MQObj = MQObjective(
+        self.MQObj = MQObjective(
             alphas=dataset.alphas,
-            objective=self._objective,
+            objective=self.objective,
             weight=dataset.weight,
-            model=self._model,
-            delta=self._delta,
-            epsilon=self._epsilon,
+            model=self.model_name,
+            delta=self.delta,
+            epsilon=self.epsilon,
         )
         if self.__is_lgb:
-            params.update({"objective": self._MQObj.fobj})
+            params.update({"objective": self.MQObj.fobj})
             if not (
                 isinstance(dataset.dtrain, lgb.Dataset)
-                and isinstance(_eval_set, lgb.Dataset)
+                and isinstance(eval_set_dtrain, lgb.Dataset)
             ):
                 raise ValueError("dtrain must be a lightgbm Dataset")
 
             self.model = lgb.train(
                 train_set=dataset.dtrain,
                 params=params,
-                feval=self._MQObj.feval,
-                valid_sets=[_eval_set],
+                feval=self.MQObj.feval,
+                valid_sets=[eval_set_dtrain],
                 **kwargs,
             )
         elif self.__is_xgb:
@@ -108,9 +108,9 @@ class MQRegressor:
                 dtrain=dataset.dtrain,
                 verbose_eval=False,
                 params=params,
-                obj=self._MQObj.fobj,
-                custom_metric=self._MQObj.feval,
-                evals=[(_eval_set, "eval")],
+                obj=self.MQObj.fobj,
+                custom_metric=self.MQObj.feval,
+                evals=[(eval_set_dtrain, "eval")],
                 **kwargs,
             )
         self._colnames = dataset.columns.to_list()
@@ -158,9 +158,9 @@ class MQRegressor:
     @property
     def __is_lgb(self) -> bool:
         """Check if the model is LightGBM."""
-        return self._model == ModelName.lightgbm
+        return self.model_name == ModelName.lightgbm
 
     @property
     def __is_xgb(self) -> bool:
         """Check if the model is XGBoost."""
-        return self._model == ModelName.xgboost
+        return self.model_name == ModelName.xgboost
