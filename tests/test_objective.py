@@ -9,6 +9,8 @@ from mqboost.objective import (
     check_loss_grad_hess,
     eval_check_loss,
     huber_loss_grad_hess,
+    validate_delta,
+    validate_epsilon,
 )
 
 
@@ -202,3 +204,39 @@ def test_invalid_epsilon_for_approx():
             delta=0.0,
             epsilon=-0.01,  # Invalid epsilon (negative)
         )
+
+# Test for validate_delta
+def test_validate_delta_valid_delta():
+    delta = 0.04
+    assert validate_delta(delta) is None
+
+
+def test_validate_delta_invalid_type():
+    with pytest.raises(ValidationException, match="Delta is not float type"):
+        validate_delta(1)
+
+
+def test_validate_delta_negative_delta():
+    with pytest.raises(ValidationException, match="Delta must be positive"):
+        validate_delta(-0.01)
+
+
+def test_validate_delta_exceeds_upper_bound():
+    delta = 0.06
+    with pytest.warns(UserWarning, match="Delta should be 0.05 or less."):
+        validate_delta(delta)
+
+# Test for validate_epsilon
+def test_validate_epsilon_valid_epsilon():
+    epsilon = 0.01
+    assert validate_epsilon(epsilon) is None
+
+
+def test_validate_epsilon_invalid_type():
+    with pytest.raises(ValidationException, match="Epsilon is not float type"):
+        validate_epsilon(1)
+
+
+def test_validate_epsilon_negative_epsilon():
+    with pytest.raises(ValidationException, match="Epsilon must be positive"):
+        validate_epsilon(-0.01)

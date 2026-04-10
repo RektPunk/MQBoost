@@ -10,14 +10,7 @@ def set_monotone_constraints(
     columns: pd.Index,
     model_name: ModelName,
 ) -> dict[str, Any]:
-    """Set monotone constraints in params
-    Args:
-        params (dict)
-        columns (pd.Index)
-        model_name (ModelName)
-    Returns:
-        dict[str, Any]
-    """
+    """Set monotone constraints in params"""
     MONOTONE_CONSTRAINTS: str = "monotone_constraints"
 
     constraints_fucs = FUNC_TYPE[model_name][TypeName.constraints_type]

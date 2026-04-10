@@ -5,13 +5,20 @@ import numpy as np
 import numpy.typing as npt
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, ObjectiveName
+from mqboost.base import FittingException, ModelName, ObjectiveName, ValidationException
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
-from mqboost.utils import params_validate
 
 __all__ = ["MQRegressor"]
+
+
+def validate_params(params: dict[str, Any]) -> None:
+    """Validates the model parameter ensuring its key dosen't contain 'objective'."""
+    if "objective" in params:
+        raise ValidationException(
+            "The parameter named 'objective' must be excluded in params"
+        )
 
 
 class MQRegressor:
@@ -46,7 +53,7 @@ class MQRegressor:
         epsilon: float = 1e-5,
     ) -> None:
         """Initialize the MQRegressor."""
-        params_validate(params=params)
+        validate_params(params=params)
         self.params = params
         self.model_name = ModelName[model]
         self.objective = ObjectiveName[objective]

@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Callable
 
 import lightgbm as lgb
@@ -5,8 +6,7 @@ import numpy as np
 import numpy.typing as npt
 import xgboost as xgb
 
-from mqboost.base import ModelName, ObjectiveName
-from mqboost.utils import delta_validate, epsilon_validate
+from mqboost.base import ModelName, ObjectiveName, ValidationException
 
 
 def calc_rho(error: npt.NDArray, alpha: float) -> npt.NDArray:
@@ -132,6 +132,29 @@ def eval_check_loss(
     return loss
 
 
+def validate_epsilon(epsilon: float) -> None:
+    """Validate epsilon parameter ensuring it is positive float"""
+    if not isinstance(epsilon, float):
+        raise ValidationException("Epsilon is not float type")
+
+    if epsilon <= 0:
+        raise ValidationException("Epsilon must be positive")
+
+
+def validate_delta(delta: float) -> None:
+    """Validates the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
+    _delta_upper_bound: float = 0.05
+
+    if not isinstance(delta, float):
+        raise ValidationException("Delta is not float type")
+
+    if delta <= 0:
+        raise ValidationException("Delta must be positive")
+
+    if delta > _delta_upper_bound:
+        warnings.warn("Delta should be 0.05 or less.")
+
+
 def build_fobj(
     alphas: list[float],
     objective: ObjectiveName,
@@ -141,10 +164,10 @@ def build_fobj(
 ) -> Callable[..., tuple[npt.NDArray, npt.NDArray]]:
     """Return fobj function."""
     if objective == ObjectiveName.approx:
-        epsilon_validate(epsilon)
+        validate_epsilon(epsilon)
 
     if objective == ObjectiveName.huber:
-        delta_validate(delta)
+        validate_delta(delta)
 
     def fobj(
         y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix

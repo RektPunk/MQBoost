@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, ObjectiveName
-from mqboost.regressor import MQDataset, MQRegressor
+from mqboost.base import FittingException, ModelName, ObjectiveName, ValidationException
+from mqboost.regressor import MQDataset, MQRegressor, validate_params
 
 
 # Test data and helper functions
@@ -200,3 +200,16 @@ def test_feature_importance_positive(dummy_dataset_lgb):
     assert all([importance >= 0 for importance in feature_importances.values()]), (
         "All importance should be positive."
     )
+
+
+# Test for params validate
+def test_set_validate_params_raises_validation_exception():
+    params = {
+        "objective": "regression",
+        "monotone_constraints": [1, -1],
+    }
+    with pytest.raises(
+        ValidationException,
+        match="The parameter named 'objective' must be excluded in params",
+    ):
+        validate_params(params)
