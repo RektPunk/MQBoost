@@ -35,4 +35,10 @@ pip install mqboost
 - **MQRegressor**: Custom multiple quantile estimator with preserving monotonicity among quantiles.
 
 ## Example
-Please refer to the [**Examples**](https://github.com/RektPunk/MQBoost/tree/main/examples) provided for further clarification.
+Please refer to the [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RektPunk/MQBoost/tree/main/examples/mqregressor.ipynb) or [**Examples**](https://github.com/RektPunk/MQBoost/tree/main/examples/mqregressor.py) provided for further clarification.
+
+# Citation
+If you use MQBoost in your research or project, please cite it as follows:
+```md
+
+```

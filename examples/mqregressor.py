@@ -1,3 +1,9 @@
+"""
+These following example show how to set up and use `mqboost` for quantile regression with fixed parameters.
+Adjust the parameters and settings as needed for your specific use case.
+To use the code, make sure you have `mqboost` and other required dependencies installed.
+"""
+
 import numpy as np
 
 from mqboost import MQDataset, MQRegressor
