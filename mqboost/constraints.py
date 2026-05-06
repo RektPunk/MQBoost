@@ -13,21 +13,30 @@ def set_monotone_constraints(
     """Set monotone constraints in params"""
     MONOTONE_CONSTRAINTS: str = "monotone_constraints"
 
-    constraints_fucs = FUNC_TYPE[model_name][TypeName.constraints_type]
+    constraints_funcs = FUNC_TYPE[model_name][TypeName.constraints_type]
     _params = params.copy()
+    num_columns = len(columns)
+
     if MONOTONE_CONSTRAINTS in _params:
         _monotone_constraints = _params.get(MONOTONE_CONSTRAINTS)
         if not isinstance(_monotone_constraints, list):
             raise TypeError(f"{MONOTONE_CONSTRAINTS} must be a list")
 
-        _monotone_constraints.append(1)
-        _params.update({MONOTONE_CONSTRAINTS: constraints_fucs(_monotone_constraints)})
+        # If user provided constraints for all columns including _tau
+        if len(_monotone_constraints) == num_columns:
+            pass
+        # If user provided constraints for original columns only
+        elif len(_monotone_constraints) == num_columns - 1:
+            _monotone_constraints.append(1)
+        else:
+            raise ValueError(
+                f"Length of {MONOTONE_CONSTRAINTS} must be {num_columns} or {num_columns - 1}"
+            )
+
+        _params.update({MONOTONE_CONSTRAINTS: constraints_funcs(_monotone_constraints)})
     else:
-        _params.update(
-            {
-                MONOTONE_CONSTRAINTS: constraints_fucs(
-                    [1 if "_tau" == col else 0 for col in columns]
-                )
-            }
-        )
+        # Default: only _tau is monotonic (1)
+        _constraints = [1 if col == "_tau" else 0 for col in columns]
+        _params.update({MONOTONE_CONSTRAINTS: constraints_funcs(_constraints)})
+
     return _params
