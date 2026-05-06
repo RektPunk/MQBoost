@@ -4,11 +4,7 @@ import pytest
 from mqboost.base import ModelName, ObjectiveName, ValidationException
 from mqboost.objective import (
     MQObjective,
-    approx_loss_grad_hess,
-    build_feval,
-    check_loss_grad_hess,
     eval_check_loss,
-    huber_loss_grad_hess,
     validate_delta,
     validate_epsilon,
 )
@@ -83,9 +79,8 @@ def test_mqobjective_approx_loss_initialization():
 def test_check_loss_grad_hess(dummy_data):
     """Test check loss gradient and Hessian calculation."""
     dtrain = dummy_data(y_true)
-    grads, hess = check_loss_grad_hess(
-        y_pred=y_pred, dtrain=dtrain, weight=None, alphas=alphas
-    )
+    obj = MQObjective(alphas, ObjectiveName.check, ModelName.lightgbm, 0.01, 1e-5)
+    grads, hess = obj.fobj(y_pred, dtrain)
     # fmt: off
     expected_grads = [-0.02, -0.02, 0.18, -0.02, -0.02, -0.1, -0.1, 0.1, -0.1, -0.1, -0.18, -0.18, 0.02, -0.18, -0.18]
     # fmt: on
@@ -99,18 +94,16 @@ def test_check_loss_grad_hess(dummy_data):
     "delta, expected_grads",
     [
         (0.01, [-0.02, -0.02, 0.18, -0.02, -0.02, -0.1, -0.1, 0.1, -0.1, -0.1, -0.18, -0.18, 0.02, -0.18, -0.18]),
-        (0.02, [0.0002, 0.0002, 0.18, -0.02, -0.02, 0.001, 0.001, 0.1, -0.1, -0.1, 0.0018, 0.0018, 0.02, -0.18, -0.18]),
-        (0.05, [0.0002, 0.0002, 0.0036, 0.0006, 0.001, 0.001, 0.001, 0.002, 0.003, 0.005, 0.0018, 0.0018, 0.0004, 0.0054, 0.009]),
+        (0.02, [-0.01, -0.01, 0.18, -0.02, -0.02, -0.05, -0.05, 0.1, -0.1, -0.1, -0.09, -0.09, 0.02, -0.18, -0.18]),
+        (0.05, [-0.004, -0.004, 0.072, -0.012, -0.02, -0.02, -0.02, 0.04, -0.06, -0.1, -0.036, -0.036, 0.008, -0.108, -0.18]),
     ],
 )
 # fmt: on
 def test_huber_loss_grad_hess(dummy_data, delta, expected_grads):
     """Test huber loss gradient and Hessian calculation with multiple datasets and deltas."""
     dtrain = dummy_data(y_true)
-    grads, hess = huber_loss_grad_hess(
-        y_pred=y_pred, dtrain=dtrain, weight = None,alphas=alphas, delta=delta
-    )
-
+    obj = MQObjective(alphas, ObjectiveName.huber, ModelName.lightgbm, delta, 1e-5)
+    grads, hess = obj.fobj(y_pred, dtrain)
     np.testing.assert_almost_equal(grads, np.array(expected_grads))
     assert grads.shape == hess.shape
     assert len(grads) == len(y_pred)
@@ -141,9 +134,8 @@ def test_huber_loss_grad_hess(dummy_data, delta, expected_grads):
 def test_approx_loss_grad_hess(dummy_data, epsilon, expected_grads, expected_hess):
     """Test approx loss gradient and Hessian calculation."""
     dtrain = dummy_data(y_true)
-    grads, hess = approx_loss_grad_hess(
-        y_pred=y_pred, dtrain=dtrain, weight = None, alphas=alphas, epsilon=epsilon
-    )
+    obj = MQObjective(alphas, ObjectiveName.approx, ModelName.lightgbm, 0.01, epsilon)
+    grads, hess = obj.fobj(y_pred, dtrain)
     np.testing.assert_almost_equal(grads, np.array(expected_grads), decimal=4)
     np.testing.assert_almost_equal(hess, np.array(expected_hess), decimal=4)
     assert grads.shape == hess.shape
@@ -163,7 +155,8 @@ def test_eval_check_loss(dummy_data):
 def test_xgb_eval_loss(dummy_data):
     """Test XGBoost evaluation function."""
     dtrain = dummy_data(y_true)
-    metric_name, loss = build_feval(ModelName.xgboost, alphas)(y_pred, dtrain)
+    obj = MQObjective(alphas, ObjectiveName.check, ModelName.xgboost, 0.01, 1e-5, None)
+    metric_name, loss = obj.xgb_feval(y_pred, dtrain)
     assert metric_name == "check_loss"
     assert isinstance(loss, float)
 
@@ -171,7 +164,8 @@ def test_xgb_eval_loss(dummy_data):
 def test_lgb_eval_loss(dummy_data):
     """Test LightGBM evaluation function."""
     dtrain = dummy_data(y_true)
-    metric_name, loss, higher_better = build_feval(ModelName.lightgbm, alphas)(y_pred, dtrain)
+    obj = MQObjective(alphas, ObjectiveName.check, ModelName.lightgbm, 0.01, 1e-5, None)
+    metric_name, loss, higher_better = obj.lgb_feval(y_pred, dtrain)
     assert metric_name == "check_loss"
     assert isinstance(loss, float)
     assert higher_better is False

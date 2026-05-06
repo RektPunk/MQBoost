@@ -1,5 +1,4 @@
 import warnings
-from typing import Any, Callable
 
 import lightgbm as lgb
 import numpy as np
@@ -9,131 +8,83 @@ import xgboost as xgb
 from mqboost.base import ModelName, ObjectiveName, ValidationException
 
 
-def calc_rho(error: npt.NDArray, alpha: float) -> npt.NDArray:
-    """Compute rho for the given error and alpha."""
+def calc_rho(error: npt.NDArray, alpha: npt.NDArray | float) -> npt.NDArray:
+    """Compute rho (pinball loss) for the given error and alpha."""
+    # L = (alpha - I(error < 0)) * error
     return (alpha - (error < 0).astype(int)) * error
 
 
 def calc_check_grad_hess(
-    error: npt.NDArray, alpha: float
+    error: npt.NDArray, alpha: npt.NDArray | float
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Compute gradient and Hessian for the check loss."""
+    # dL/dp = I(error < 0) - alpha
+    # d2L/dp2 = 1 as a proxy for Hessian
     return (error < 0).astype(int) - alpha, np.ones_like(error)
 
 
 def calc_huber_grad_hess(
-    error: npt.NDArray, alpha: float, delta: float
+    error: npt.NDArray, alpha: npt.NDArray | float, delta: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
-    """Compute gradient and Hessian for the Huber loss."""
+    """Compute gradient and Hessian for the Huber loss (Smooth Quantile Loss)."""
     abs_error = np.abs(error)
-    smaller_delta = (abs_error <= delta).astype(int)
-    bigger_delta = (abs_error > delta).astype(int)
-    rho_val = calc_rho(error=error, alpha=alpha)
+    mask = (abs_error <= delta).astype(float)
+
+    # Gradient for linear part
     check_grad, check_hess = calc_check_grad_hess(error=error, alpha=alpha)
-    return rho_val * smaller_delta + check_grad * bigger_delta, check_hess
+    # Gradient for Huber part
+    # dL/dp = check_grad * (abs_error / delta)
+    huber_grad = check_grad * (abs_error / delta)
+    grad = mask * huber_grad + (1 - mask) * check_grad
+
+    # Hessian for Huber part
+    # d2L/dp2 = |check_grad| / delta
+    huber_hess = np.abs(check_grad) / delta
+    # For linear part, we use check_hess as a proxy for Hessian
+    hess = mask * huber_hess + (1 - mask) * check_hess
+
+    return grad, hess
 
 
 def calc_approx_grad_hess(
-    error: npt.NDArray, alpha: float, epsilon: float
+    error: npt.NDArray, alpha: npt.NDArray | float, epsilon: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Compute gradient and Hessian for the approximate loss (MM loss)."""
+    # dL/dp = 0.5 * (1 - 2 * alpha - error / (epsilon + |error|))
     approx_grad = 0.5 * (1 - 2 * alpha - error / (epsilon + np.abs(error)))
+
+    # d2L/dp2 = 1 / (2 * (epsilon + |error|))
     approx_hess = 1 / (2 * (epsilon + np.abs(error)))
     return approx_grad, approx_hess
 
 
-def train_pred_reshape(
-    dtrain: lgb.Dataset | xgb.DMatrix,
-    y_pred: npt.NDArray,
-    len_alpha: int,
-) -> tuple[npt.NDArray, npt.NDArray]:
-    """Reshape training predictions and labels to match the number of quantile levels."""
-    y_train = dtrain.get_label()
-    if not isinstance(y_train, np.ndarray):
-        y_train = np.array(y_train)
-    return y_train.reshape(len_alpha, -1), y_pred.reshape(len_alpha, -1)
-
-
-def compute_grad_hess_single_alpha(
-    y_true: npt.NDArray,
-    y_pred: npt.NDArray,
-    alpha: float,
-    calc_grad_hess_fn: Callable,
-    n: int,
-    **kwargs,
-) -> tuple[npt.NDArray, npt.NDArray]:
-    """Compute gradient and Hessian using the given function for a single alpha value."""
-    error = y_true - y_pred
-    grad, hess = calc_grad_hess_fn(error=error, alpha=alpha, **kwargs)
-    return grad / n, hess / n
-
-
-def compute_grad_hess(
-    calc_grad_hess_fn: Callable,
-) -> Callable[...,]:
-    """Return a function that computes gradient and Hessian for a given calc_grad_hess_fn."""
-
-    def _compute_grads_hess(
-        y_pred: npt.NDArray,
-        dtrain: lgb.Dataset | xgb.DMatrix,
-        alphas: list[float],
-        weight: npt.NDArray | None,
-        **kwargs: Any,
-    ) -> tuple[npt.NDArray, npt.NDArray]:
-        len_alpha = len(alphas)
-        y_train_reshaped, y_pred_reshaped = train_pred_reshape(
-            y_pred=y_pred, dtrain=dtrain, len_alpha=len_alpha
-        )
-
-        grads: list[np.ndarray] = []
-        hess: list[np.ndarray] = []
-        len_y = len(y_train_reshaped[0])
-        for alpha_inx in range(len(alphas)):
-            _grad, _hess = compute_grad_hess_single_alpha(
-                y_train_reshaped[alpha_inx],
-                y_pred_reshaped[alpha_inx],
-                alphas[alpha_inx],
-                calc_grad_hess_fn,
-                len_y,
-                **kwargs,
-            )
-            grads.append(_grad)
-            hess.append(_hess)
-
-        if isinstance(weight, np.ndarray):
-            return np.concatenate(grads) * weight, np.concatenate(hess) * weight
-        else:
-            return np.concatenate(grads), np.concatenate(hess)
-
-    return _compute_grads_hess
-
-
-# Gradient and Hessian functions
-check_loss_grad_hess = compute_grad_hess(calc_grad_hess_fn=calc_check_grad_hess)
-huber_loss_grad_hess = compute_grad_hess(calc_grad_hess_fn=calc_huber_grad_hess)
-approx_loss_grad_hess = compute_grad_hess(calc_grad_hess_fn=calc_approx_grad_hess)
+def _get_alpha_expanded(alphas: list[float], total_len: int) -> tuple[npt.NDArray, int]:
+    """Helper to expand alphas and get original dataset size."""
+    n = total_len // len(alphas)
+    return np.repeat(alphas, n), n
 
 
 def eval_check_loss(
-    y_pred: np.ndarray,
+    y_pred: npt.NDArray,
     dtrain: lgb.Dataset | xgb.DMatrix,
     alphas: list[float],
 ) -> float:
-    """Evaluate the check loss function."""
-    len_alpha = len(alphas)
-    y_train_reshaped, y_pred_reshaped = train_pred_reshape(
-        y_pred=y_pred, dtrain=dtrain, len_alpha=len_alpha
-    )
-    loss: float = 0.0
-    for alpha_inx in range(len_alpha):
-        _err_for_alpha = y_train_reshaped[alpha_inx] - y_pred_reshaped[alpha_inx]
-        _loss = calc_rho(error=_err_for_alpha, alpha=alphas[alpha_inx])
-        loss += float(np.mean(_loss))
-    return loss
+    """Evaluate the check loss function using vectorized operations."""
+    y_true = dtrain.get_label()
+    if not isinstance(y_true, np.ndarray):
+        y_true = np.array(y_true)
+
+    alphas_expanded, n = _get_alpha_expanded(alphas, len(y_true))
+    error = y_true - y_pred
+    loss_all = calc_rho(error=error, alpha=alphas_expanded)
+
+    # Return the sum of mean losses across all quantiles
+    loss_reshaped = loss_all.reshape(len(alphas), n)
+    return float(np.sum(np.mean(loss_reshaped, axis=1)))
 
 
 def validate_epsilon(epsilon: float) -> None:
-    """Validate epsilon parameter ensuring it is positive float"""
+    """Validate epsilon parameter ensuring it is a positive float."""
     if not isinstance(epsilon, float):
         raise ValidationException("Epsilon is not float type")
 
@@ -142,7 +93,7 @@ def validate_epsilon(epsilon: float) -> None:
 
 
 def validate_delta(delta: float) -> None:
-    """Validates the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
+    """Validate the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
     _delta_upper_bound: float = 0.05
 
     if not isinstance(delta, float):
@@ -155,68 +106,9 @@ def validate_delta(delta: float) -> None:
         warnings.warn("Delta should be 0.05 or less.")
 
 
-def build_fobj(
-    alphas: list[float],
-    objective: ObjectiveName,
-    delta: float,
-    epsilon: float,
-    weight: np.ndarray | None,
-) -> Callable[..., tuple[npt.NDArray, npt.NDArray]]:
-    """Return fobj function."""
-    if objective == ObjectiveName.approx:
-        validate_epsilon(epsilon)
-
-    if objective == ObjectiveName.huber:
-        validate_delta(delta)
-
-    def fobj(
-        y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix
-    ) -> tuple[npt.NDArray, npt.NDArray]:
-        if objective == ObjectiveName.check:
-            return check_loss_grad_hess(
-                y_pred=y_pred,
-                dtrain=dtrain,
-                alphas=alphas,
-                weight=weight,
-            )
-
-        elif objective == ObjectiveName.huber:
-            return huber_loss_grad_hess(
-                y_pred=y_pred,
-                dtrain=dtrain,
-                alphas=alphas,
-                weight=weight,
-                delta=delta,
-            )
-
-        elif objective == ObjectiveName.approx:
-            return approx_loss_grad_hess(
-                y_pred=y_pred,
-                dtrain=dtrain,
-                alphas=alphas,
-                weight=weight,
-                epsilon=epsilon,
-            )
-
-    return fobj
-
-
-def build_feval(
-    model: ModelName, alphas: list[float]
-) -> Callable[[npt.NDArray, lgb.Dataset | xgb.DMatrix], tuple]:
-    """Return feval function."""
-
-    def feval(y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix) -> tuple:
-        loss = eval_check_loss(y_pred, dtrain, alphas)
-        if model == ModelName.lightgbm:
-            return "check_loss", loss, False
-        elif model == ModelName.xgboost:
-            return "check_loss", loss
-
-    return feval
-
-
 class MQObjective:
+    """MQObjective encapsulates the objective and evaluation functions for the MQRegressor."""
+
     def __init__(
         self,
         alphas: list[float],
@@ -224,8 +116,67 @@ class MQObjective:
         model: ModelName,
         delta: float,
         epsilon: float,
-        weight: np.ndarray | None,
+        weight: npt.NDArray | None = None,
     ) -> None:
         """Initialize the MQObjective."""
-        self.fobj = build_fobj(alphas, objective, delta, epsilon, weight)
-        self.feval = build_feval(model, alphas)
+        self.alphas = alphas
+        self.objective = objective
+        self.model = model
+        self.delta = delta
+        self.epsilon = epsilon
+        self.weight = weight
+
+        # Pre-validate parameters
+        if self.objective == ObjectiveName.approx:
+            validate_epsilon(self.epsilon)
+        if self.objective == ObjectiveName.huber:
+            validate_delta(self.delta)
+
+    def fobj(
+        self, y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix
+    ) -> tuple[npt.NDArray, npt.NDArray]:
+        """Custom objective function for LightGBM and XGBoost."""
+        y_true = dtrain.get_label()
+        if not isinstance(y_true, np.ndarray):
+            y_true = np.array(y_true)
+
+        alphas_expanded, n = _get_alpha_expanded(self.alphas, len(y_true))
+        error = y_true - y_pred
+
+        # Calculate gradients and Hessians based on objective
+        if self.objective == ObjectiveName.check:
+            grads, hess = calc_check_grad_hess(error, alphas_expanded)
+        elif self.objective == ObjectiveName.huber:
+            grads, hess = calc_huber_grad_hess(error, alphas_expanded, self.delta)
+        elif self.objective == ObjectiveName.approx:
+            grads, hess = calc_approx_grad_hess(error, alphas_expanded, self.epsilon)
+        else:
+            raise ValueError(f"Unknown objective: {self.objective}")
+
+        # Normalize and apply weights
+        grads /= n
+        hess /= n
+
+        if isinstance(self.weight, np.ndarray):
+            return grads * self.weight, hess * self.weight
+        return grads, hess
+
+    def feval(
+        self, y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix
+    ) -> tuple[str, float, bool] | tuple[str, float]:
+        """Custom evaluation function for LightGBM and XGBoost."""
+        if self.model == ModelName.lightgbm:
+            return self.lgb_feval(y_pred, dtrain)  # type: ignore
+        return self.xgb_feval(y_pred, dtrain)  # type: ignore
+
+    def lgb_feval(
+        self, y_pred: npt.NDArray, dtrain: lgb.Dataset
+    ) -> tuple[str, float, bool]:
+        """Custom evaluation function for LightGBM."""
+        loss = eval_check_loss(y_pred, dtrain, self.alphas)
+        return "check_loss", loss, False
+
+    def xgb_feval(self, y_pred: npt.NDArray, dtrain: xgb.DMatrix) -> tuple[str, float]:
+        """Custom evaluation function for XGBoost."""
+        loss = eval_check_loss(y_pred, dtrain, self.alphas)
+        return "check_loss", loss

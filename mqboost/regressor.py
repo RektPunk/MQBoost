@@ -105,7 +105,7 @@ class MQRegressor:
             self.model = lgb.train(
                 train_set=dataset.dtrain,
                 params=params,
-                feval=self.MQObj.feval,
+                feval=self.MQObj.lgb_feval,
                 valid_sets=[eval_set_dtrain],
                 **kwargs,
             )
@@ -115,7 +115,7 @@ class MQRegressor:
                 verbose_eval=False,
                 params=params,
                 obj=self.MQObj.fobj,
-                custom_metric=self.MQObj.feval,
+                custom_metric=self.MQObj.xgb_feval,
                 evals=[(eval_set_dtrain, "eval")],
                 **kwargs,
             )
