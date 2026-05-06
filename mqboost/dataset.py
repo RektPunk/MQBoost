@@ -1,4 +1,3 @@
-from itertools import chain, repeat
 from typing import Callable
 
 import lightgbm as lgb
@@ -55,13 +54,13 @@ def prepare_x(
     if "_tau" in x.columns:
         raise ValidationException("Column name '_tau' is not allowed.")
 
-    _alpha_repeat_count_list = [list(repeat(alpha, len(x))) for alpha in alphas]
-    _alpha_repeat_list = list(chain.from_iterable(_alpha_repeat_count_list))
+    num_alphas = len(alphas)
+    num_rows = len(x)
 
-    _repeated_x = pd.concat([x] * len(alphas), axis=0).reset_index(drop=True)
-    _repeated_x = _repeated_x.assign(
-        _tau=_alpha_repeat_list,
-    )
+    _alpha_repeat_list = np.repeat(alphas, num_rows)
+    _repeated_x = pd.concat([x] * num_alphas, axis=0).reset_index(drop=True)
+    _repeated_x["_tau"] = _alpha_repeat_list
+
     return _repeated_x
 
 
@@ -70,12 +69,12 @@ def prepare_y(
     alphas: list[float],
 ) -> npt.NDArray:
     """Prepares and returns a stacked array of target values repeated for each alpha."""
-    return np.concatenate(list(repeat(y, len(alphas))))
+    return np.tile(y, len(alphas))
 
 
 def to_dataframe(x: pd.DataFrame | pd.Series | npt.NDArray) -> pd.DataFrame:
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
-        _x = pd.DataFrame(x.copy())
+        _x = pd.DataFrame(x)
     else:
         _x = x.copy()
     return _x
@@ -115,14 +114,29 @@ class MQDataset:
         _data = to_dataframe(data)
         self.data = prepare_x(x=_data, alphas=self.alphas)
         self.columns = self.data.columns
+
+        self._label_raw = label
+        self._label_mean = None
         if label is not None:
             self._label_mean = label.mean()
             self._label = prepare_y(y=label - self._label_mean, alphas=self.alphas)
             self._is_none_label = False
+        else:
+            self._is_none_label = True
 
+        self._weight_raw = weight
         if weight is not None:
             _weight = np.array(weight) if not isinstance(weight, np.ndarray) else weight
             self._weight = prepare_y(y=_weight, alphas=self.alphas)
+
+    def set_label_mean(self, label_mean: float) -> None:
+        """Re-center labels using a new mean."""
+        if self._label_raw is None:
+            raise ValidationException("Cannot set label mean when labels are None")
+        self._label_mean = label_mean
+        self._label = prepare_y(
+            y=self._label_raw - self._label_mean, alphas=self.alphas
+        )
 
     @property
     def label(self) -> npt.NDArray:
@@ -134,6 +148,8 @@ class MQDataset:
     def label_mean(self) -> float:
         """Get the label mean."""
         self.__label_available()
+        if self._label_mean is None:
+            raise ValidationException("Label mean is None")
         return float(self._label_mean)
 
     @property

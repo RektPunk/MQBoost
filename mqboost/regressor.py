@@ -14,7 +14,7 @@ __all__ = ["MQRegressor"]
 
 
 def validate_params(params: dict[str, Any]) -> None:
-    """Validates the model parameter ensuring its key dosen't contain 'objective'."""
+    """Validates the model parameter ensuring its key doesn't contain 'objective'."""
     if "objective" in params:
         raise ValidationException(
             "The parameter named 'objective' must be excluded in params"
@@ -74,12 +74,12 @@ class MQRegressor:
             **kwargs:
                 train parameters.
         """
+        self._label_mean = dataset.label_mean
         if eval_set:
+            eval_set.set_label_mean(self._label_mean)
             eval_set_dtrain = eval_set.dtrain
         else:
             eval_set_dtrain = dataset.dtrain
-
-        self._label_mean = dataset.label_mean
 
         params = set_monotone_constraints(
             params=self.params,
