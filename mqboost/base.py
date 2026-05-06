@@ -1,22 +1,22 @@
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 import lightgbm as lgb
 import xgboost as xgb
 
 
-class ModelName(StrEnum):
+class ModelName(str, Enum):
     lightgbm = "lightgbm"
     xgboost = "xgboost"
 
 
-class ObjectiveName(StrEnum):
+class ObjectiveName(str, Enum):
     check = "check"
     huber = "huber"
     approx = "approx"
 
 
-class TypeName(StrEnum):
+class TypeName(str, Enum):
     train_dtype = "train_dtype"
     predict_dtype = "predict_dtype"
     constraints_type = "constraints_type"
