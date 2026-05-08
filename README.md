@@ -1,14 +1,6 @@
 <div style="text-align: center;">
   <img src="https://capsule-render.vercel.app/api?type=transparent&fontColor=0047AB&text=MQBoost&height=120&fontSize=90">
 </div>
-<p align="center">
-  <a href="https://github.com/RektPunk/MQBoost/releases/latest">
-    <img alt="release" src="https://img.shields.io/github/v/release/RektPunk/mqboost.svg">
-  </a>
-  <a href="https://pypi.org/project/MQBoost">
-    <img alt="Pythonv" src="https://img.shields.io/pypi/pyversions/MQBoost.svg?logo=python&logoColor=white">
-  </a>
-</p>
 
 **MQBoost** is a gradient boosting-based framework for simultaneous multi-quantile regression with monotonicity constraints (non-crossing quantiles).
 It is built on top of  [LightGBM](https://github.com/microsoft/LightGBM) and [XGBoost](https://github.com/dmlc/xgboost), two leading gradient boosting frameworks, enabling efficient and scalable training while ensuring valid quantile estimates.
