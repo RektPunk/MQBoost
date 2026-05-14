@@ -22,8 +22,8 @@ alphas = [0.3, 0.4, 0.5, 0.6, 0.7]
 model = "lightgbm"  # Options: "lightgbm" or "xgboost"
 
 # Set objective function
-objective = "huber"  # Options: "check", "huber", or "approx"
-delta = 0.01  # Set when objective is "huber", default is 0.01
+objective = "approx"  # Options: "approx", "check", or "huber"
+epsilon = 1e-5  # Set when objective is "approx" or "huber", default is 1e-5
 
 # Train the model with fixed parameters
 # Initialize the LightGBM-based quantile regressor
@@ -38,7 +38,7 @@ mq_regressor = MQRegressor(
     params=lgb_params,
     objective=objective,
     model=model,
-    delta=delta,
+    epsilon=epsilon,
 )
 
 # Fit the model

@@ -1,5 +1,3 @@
-import warnings
-
 import lightgbm as lgb
 import numpy as np
 import numpy.typing as npt
@@ -24,22 +22,22 @@ def calc_check_grad_hess(
 
 
 def calc_huber_grad_hess(
-    error: npt.NDArray, alpha: npt.NDArray | float, delta: float
+    error: npt.NDArray, alpha: npt.NDArray | float, epsilon: float
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Compute gradient and Hessian for the Huber loss (Smooth Quantile Loss)."""
     abs_error = np.abs(error)
-    mask = (abs_error <= delta).astype(float)
+    mask = (abs_error <= epsilon).astype(float)
 
     # Gradient for linear part
     check_grad, check_hess = calc_check_grad_hess(error=error, alpha=alpha)
     # Gradient for Huber part
-    # dL/dp = check_grad * (abs_error / delta)
-    huber_grad = check_grad * (abs_error / delta)
+    # dL/dp = check_grad * (abs_error / epsilon)
+    huber_grad = check_grad * (abs_error / epsilon)
     grad = mask * huber_grad + (1 - mask) * check_grad
 
     # Hessian for Huber part
-    # d2L/dp2 = |check_grad| / delta
-    huber_hess = np.abs(check_grad) / delta
+    # d2L/dp2 = |check_grad| / epsilon
+    huber_hess = np.abs(check_grad) / epsilon
     # For linear part, we use check_hess as a proxy for Hessian
     hess = mask * huber_hess + (1 - mask) * check_hess
 
@@ -92,20 +90,6 @@ def validate_epsilon(epsilon: float) -> None:
         raise ValidationException("Epsilon must be positive")
 
 
-def validate_delta(delta: float) -> None:
-    """Validate the delta parameter ensuring it is a positive float and less than or equal to 0.05."""
-    _delta_upper_bound: float = 0.05
-
-    if not isinstance(delta, float):
-        raise ValidationException("Delta is not float type")
-
-    if delta <= 0:
-        raise ValidationException("Delta must be positive")
-
-    if delta > _delta_upper_bound:
-        warnings.warn("Delta should be 0.05 or less.")
-
-
 class MQObjective:
     """MQObjective encapsulates the objective and evaluation functions for the MQRegressor."""
 
@@ -114,7 +98,6 @@ class MQObjective:
         alphas: list[float],
         objective: ObjectiveName,
         model: ModelName,
-        delta: float,
         epsilon: float,
         weight: npt.NDArray | None = None,
     ) -> None:
@@ -122,15 +105,12 @@ class MQObjective:
         self.alphas = alphas
         self.objective = objective
         self.model = model
-        self.delta = delta
         self.epsilon = epsilon
         self.weight = weight
 
         # Pre-validate parameters
-        if self.objective == ObjectiveName.approx:
+        if self.objective in (ObjectiveName.approx, ObjectiveName.huber):
             validate_epsilon(self.epsilon)
-        if self.objective == ObjectiveName.huber:
-            validate_delta(self.delta)
 
     def fobj(
         self, y_pred: npt.NDArray, dtrain: lgb.Dataset | xgb.DMatrix
@@ -147,7 +127,7 @@ class MQObjective:
         if self.objective == ObjectiveName.check:
             grads, hess = calc_check_grad_hess(error, alphas_expanded)
         elif self.objective == ObjectiveName.huber:
-            grads, hess = calc_huber_grad_hess(error, alphas_expanded, self.delta)
+            grads, hess = calc_huber_grad_hess(error, alphas_expanded, self.epsilon)
         elif self.objective == ObjectiveName.approx:
             grads, hess = calc_approx_grad_hess(error, alphas_expanded, self.epsilon)
         else:
