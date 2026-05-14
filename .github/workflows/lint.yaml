@@ -18,3 +18,13 @@ jobs:
         uses: astral-sh/ruff-action@v4.0.0
         with:
           args: "check . && ruff format --check --diff ."
+
+      - name: Install Ruff
+        uses: astral-sh/ruff-action@v4.0.0
+        with:
+          args: "--version"
+
+      - name: Run Ruff Check & Format
+        run: |
+          ruff check .
+          ruff format --check --diff .

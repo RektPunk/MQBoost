@@ -90,8 +90,7 @@ class MQDataset:
         data (pd.DataFrame | pd.Series | np.ndarray): The input features.
         label (pd.Series | np.ndarray): The target labels (if provided).
         weight (list[float] | list[int] | np.ndarray | pd.Series): Weight for each instance (if provided).
-        model (str): The model type (LightGBM or XGBoost).
-    """
+        model (str): The model type (LightGBM or XGBoost)."""
 
     def __init__(
         self,

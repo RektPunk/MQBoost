@@ -14,8 +14,7 @@ def set_monotone_constraints(
 
     To ensure that predicted quantiles are non-decreasing with respect to the
     quantile level (alpha), a monotone constraint of '1' is applied to the
-    special '_tau' feature.
-    """
+    special '_tau' feature."""
     MONOTONE_CONSTRAINTS: str = "monotone_constraints"
 
     constraints_funcs = FUNC_TYPE[model_name][TypeName.constraints_type]
