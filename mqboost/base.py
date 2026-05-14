@@ -38,12 +38,10 @@ FUNC_TYPE: dict[ModelName, dict[TypeName, Any]] = {
 
 # Exception
 class FittingException(Exception):
-    """Raised when an operation requiring a fitted model is called on an unfitted model."""
-
+    # Raised when an operation requiring a fitted model is called on an unfitted model.
     pass
 
 
 class ValidationException(Exception):
-    """Raised when input parameters or data fail validation checks."""
-
+    # Raised when input parameters or data fail validation checks.
     pass
