@@ -23,10 +23,7 @@ def validate_params(params: dict[str, Any]) -> None:
 
 class MQRegressor:
     """Multiple Quantile Regressor using GBDT (LightGBM or XGBoost).
-
-    This regressor implements a multi-quantile estimation strategy by stacking
-    the dataset and using monotone constraints on the special '_tau' feature
-    to ensure non-crossing quantiles."""
+    This regressor implements a multi-quantile estimation while ensuring non-crossing quantiles."""
 
     def __init__(
         self,
