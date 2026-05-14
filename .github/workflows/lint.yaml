@@ -17,4 +17,4 @@ jobs:
       - name: Lint with Ruff
         uses: astral-sh/ruff-action@v4
         with:
-          args: "check && ruff format --check --diff"
+          args: "check . && ruff format --check --diff ."
