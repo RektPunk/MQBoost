@@ -195,15 +195,19 @@ def test_invalid_epsilon_for_approx():
 
 # Test for validate_epsilon
 def test_validate_epsilon_valid_epsilon():
+    epsilon = 0.01
+    assert validate_epsilon(epsilon) is None
+
     epsilon = 0.04
     assert validate_epsilon(epsilon) is None
 
-    epsilon = 0.01
-    assert validate_epsilon(epsilon) is None
 
 def test_validate_epsilon_invalid_type():
     with pytest.raises(ValidationException, match="Epsilon is not float type"):
         validate_epsilon(1)
+
+    with pytest.raises(ValidationException, match="Epsilon is not float type"):
+        validate_epsilon(2)
 
 
 def test_validate_epsilon_negative_epsilon():

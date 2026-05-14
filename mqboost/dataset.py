@@ -18,7 +18,7 @@ from mqboost.base import (
 def validate_alpha(
     alphas: list[float] | float,
 ) -> list[float]:
-    """Validates the list of alphas ensuring they are in ascending order and contain no duplicates."""
+    """Validate target quantiles (alphas). Ensures alphas are in (0, 1), in ascending order, and contain no duplicates."""
     if isinstance(alphas, float):
         alphas = [alphas]
 
@@ -47,10 +47,8 @@ def prepare_x(
     x: pd.DataFrame,
     alphas: list[float],
 ) -> pd.DataFrame:
-    """Prepares and returns a stacked DataFrame of features repeated for each alpha, with an additional column indicating the alpha value.
-    Raises:
-        ValidationException: If the input data contains a column named '_tau'.
-    """
+    """Prepare the feature matrix for multi-quantile training by stacking the dataset
+    and adding a '_tau' column to indicate the quantile level."""
     if "_tau" in x.columns:
         raise ValidationException("Column name '_tau' is not allowed.")
 
@@ -68,11 +66,12 @@ def prepare_y(
     y: pd.Series | npt.NDArray,
     alphas: list[float],
 ) -> npt.NDArray:
-    """Prepares and returns a stacked array of target values repeated for each alpha."""
+    """Prepare the target vector by repeating it for each target quantile."""
     return np.tile(y, len(alphas))
 
 
 def to_dataframe(x: pd.DataFrame | pd.Series | npt.NDArray) -> pd.DataFrame:
+    """Convert numpy array or pandas Series to a pandas DataFrame."""
     if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
         _x = pd.DataFrame(x)
     else:
@@ -81,8 +80,8 @@ def to_dataframe(x: pd.DataFrame | pd.Series | npt.NDArray) -> pd.DataFrame:
 
 
 class MQDataset:
-    """MQDataset encapsulates the dataset used for training and predicting with the MQRegressor.
-    It supports both LightGBM and XGBoost models, handling data preparation, validation, and conversion for training and prediction.
+    """A container for multi-quantile datasets, handling the transformation into
+    a stacked format suitable for LightGBM and XGBoost training.
 
     Attributes:
         alphas (list[float] | float):

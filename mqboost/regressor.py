@@ -14,7 +14,7 @@ __all__ = ["MQRegressor"]
 
 
 def validate_params(params: dict[str, Any]) -> None:
-    """Validates the model parameter ensuring its key doesn't contain 'objective'."""
+    """Validate that model parameters do not contain an 'objective' key."""
     if "objective" in params:
         raise ValidationException(
             "The parameter named 'objective' must be excluded in params"
@@ -22,23 +22,12 @@ def validate_params(params: dict[str, Any]) -> None:
 
 
 class MQRegressor:
-    """MQRegressor is a custom multiple quantile estimator that supports LightGBM and XGBoost models with
-    preserving monotonicity among quantiles.
+    """
+    Multiple Quantile Regressor using GBDT (LightGBM or XGBoost).
 
-    Attributes:
-        params (dict[str, Any]):
-            Parameters for the model.
-            Any params related to model can be used except "objective".
-        model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
-        objective (str): The objective function (either 'check', 'huber', or 'approx'). Default is 'check'.
-        epsilon (float):
-            Parameter for the 'smooth approximated check' or 'huber' objective function.
-            Default is 1e-5.
-    Methods:
-        fit(dataset, eval_set):
-            Fits the regressor to the provided dataset, optionally evaluating on a separate validation set.
-        predict(dataset):
-            Predicts quantiles for the given dataset.
+    This regressor implements a multi-quantile estimation strategy by stacking
+    the dataset and using monotone constraints on the special '_tau' feature
+    to ensure non-crossing quantiles.
     """
 
     def __init__(
@@ -48,7 +37,7 @@ class MQRegressor:
         objective: str = ObjectiveName.check.value,
         epsilon: float = 1e-5,
     ) -> None:
-        """Initialize the MQRegressor."""
+        """Initialize the MQRegressor with specified model parameters and objective."""
         validate_params(params=params)
         self.params = params
         self.model_name = ModelName[model]
@@ -61,14 +50,7 @@ class MQRegressor:
         eval_set: MQDataset | None = None,
         **kwargs,
     ) -> None:
-        """Fit the regressor to the dataset.
-        Args:
-            dataset (MQDataset): The dataset to fit the model on.
-            eval_set (Optional[MQDataset]):
-                The validation dataset. If None, the dataset is used for evaluation.
-            **kwargs:
-                train parameters.
-        """
+        """Fit the multi-quantile regressor to the dataset."""
         self._label_mean = dataset.label_mean
         if eval_set:
             eval_set.set_label_mean(self._label_mean)
@@ -120,12 +102,7 @@ class MQRegressor:
         self,
         dataset: MQDataset,
     ) -> npt.NDArray:
-        """Predict quantiles for the dataset.
-        Args:
-            dataset (MQDataset): The dataset to make predictions on.
-        Returns:
-            np.ndarray: The predicted quantiles.
-        """
+        """Predict multiple quantiles for the given dataset."""
         self.__predict_available()
         _pred = (
             np.asanyarray(self.model.predict(data=dataset.dpredict)) + self._label_mean
@@ -140,6 +117,7 @@ class MQRegressor:
 
     @property
     def feature_importance(self) -> dict[str, Any]:
+        """Get feature importance scores from the fitted model."""
         self.__predict_available()
         importances: dict[str, Any] = {str(k): 0 for k in self._colnames}
         if self.__is_lgb:
