@@ -10,13 +10,13 @@ Standard quantile regression models often suffer from quantile crossing (e.g., 9
 - Enforcing monotonicity across quantiles
 - Leveraging efficient boosting frameworks
 
-# Installation
+# Usage
+## Installation
 Install using pip:
 ```bash
 pip install mqboost
 ```
 
-# Usage
 ## Features
 - **MQDataset**: Encapsulates the dataset used for MQRegressor.
 - **MQRegressor**: Custom multiple quantile estimator with preserving monotonicity among quantiles.
