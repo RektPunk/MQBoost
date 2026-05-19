@@ -32,5 +32,17 @@ Please refer to the [![Open In Colab](https://colab.research.google.com/assets/c
 # Citation
 If you use MQBoost in your research or project, please cite it as follows:
 ```md
-
+@article{Moon2026,
+    title={Monotone Composite Quantile Regression via Second-Order Gradient Boosting Framework},
+    author={Moon, Sangjun and Hong, Sungchul and Park, Beomjin},
+    journal={Machine Learning},
+    volume={115},
+    number={6},
+    pages={127},
+    year={2026},
+    month={may},
+    issn={1573-0565},
+    doi={10.1007/s10994-026-07058-2},
+    url={https://doi.org/10.1007/s10994-026-07058-2}
+}
 ```
