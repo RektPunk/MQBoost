@@ -3,19 +3,21 @@ name: Publish Python Package
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
-  release:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    # poetry publish
-    - name: Publish module
-      uses: JRubics/poetry-publish@v2.0
-      with:
-        pypi_token: ${{ secrets.PYPI_TOKEN }}
-        poetry_install_options: "--without dev"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build distributions
+        run: uv build --sdist --wheel
+
+      - name: Publish to PyPI
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}

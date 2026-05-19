@@ -11,26 +11,25 @@ from mqboost.base import (
     ObjectiveName,
     TypeName,
     ValidationException,
-    _lgb_predict_dtype,
 )
 
 
 # Test Enum behavior
 def test_model_name_enum():
-    assert ModelName.get("lightgbm") == ModelName.lightgbm
-    assert ModelName.get("xgboost") == ModelName.xgboost
+    assert ModelName["lightgbm"] == ModelName.lightgbm
+    assert ModelName["xgboost"] == ModelName.xgboost
 
-    with pytest.raises(ValueError):
-        ModelName.get("invalid_model")
+    with pytest.raises(KeyError):
+        ModelName["invalid_model"]
 
 
 def test_objective_name_enum():
-    assert ObjectiveName.get("check") == ObjectiveName.check
-    assert ObjectiveName.get("huber") == ObjectiveName.huber
-    assert ObjectiveName.get("approx") == ObjectiveName.approx
+    assert ObjectiveName["check"] == ObjectiveName.check
+    assert ObjectiveName["huber"] == ObjectiveName.huber
+    assert ObjectiveName["approx"] == ObjectiveName.approx
 
-    with pytest.raises(ValueError):
-        ObjectiveName.get("invalid_objective")
+    with pytest.raises(KeyError):
+        ObjectiveName["invalid_objective"]
 
 
 # Test FUNC_TYPE
@@ -50,20 +49,19 @@ def test_func_type_for_lgb():
     )
     assert isinstance(FUNC_TYPE[ModelName.lightgbm][TypeName.constraints_type](), list)
 
+    data = pd.DataFrame([1, 2, 3])
+    assert FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](data) is data
+
+    array_data = np.array([1, 2, 3])
+    assert (
+        FUNC_TYPE[ModelName.lightgbm][TypeName.predict_dtype](array_data) is array_data
+    )
+
 
 def test_func_type_for_xgb():
     assert FUNC_TYPE[ModelName.xgboost][TypeName.train_dtype] == xgb.DMatrix
     assert FUNC_TYPE[ModelName.xgboost][TypeName.predict_dtype] == xgb.DMatrix
     assert isinstance(FUNC_TYPE[ModelName.xgboost][TypeName.constraints_type](), tuple)
-
-
-# Test _lgb_predict_dtype
-def test_lgb_predict_dtype():
-    data = pd.DataFrame([1, 2, 3])
-    assert _lgb_predict_dtype(data) is data
-
-    array_data = np.array([1, 2, 3])
-    assert _lgb_predict_dtype(array_data) is array_data
 
 
 # Test custom exceptions

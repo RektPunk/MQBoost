@@ -1,58 +1,43 @@
+from typing import Any
+
 import lightgbm as lgb
 import numpy as np
+import numpy.typing as npt
 import xgboost as xgb
 
-from mqboost.base import FittingException, ModelName, ObjectiveName, ParamsLike
+from mqboost.base import FittingException, ModelName, ObjectiveName, ValidationException
 from mqboost.constraints import set_monotone_constraints
 from mqboost.dataset import MQDataset
 from mqboost.objective import MQObjective
-from mqboost.utils import params_validate
 
 __all__ = ["MQRegressor"]
 
 
+def validate_params(params: dict[str, Any]) -> None:
+    """Validate that model parameters do not contain an 'objective' key."""
+    if "objective" in params:
+        raise ValidationException(
+            "The parameter named 'objective' must be excluded in params"
+        )
+
+
 class MQRegressor:
-    """
-    MQRegressor is a custom multiple quantile estimator that supports LightGBM and XGBoost models with
-    preserving monotonicity among quantiles.
-
-    Attributes:
-        params (dict[str, Any]):
-            Parameters for the model.
-            Any params related to model can be used except "objective".
-        model (str): The model type (either 'lightgbm' or 'xgboost'). Default is 'lightgbm'.
-        objective (str): The objective function (either 'check', 'huber', or 'approx'). Default is 'check'.
-        delta (float):
-            Parameter for the 'huber' objective function.
-            Default is 0.01 and must be smaller than 0.05.
-        epsilon (float):
-            Parameter for the 'smooth approximated check' objective function.
-            Default is 1e-5.
-    Methods:
-        fit(dataset, eval_set):
-            Fits the regressor to the provided dataset, optionally evaluating on a separate validation set.
-        predict(dataset):
-            Predicts quantiles for the given dataset.
-
-    Property:
-        MQObj: Returns the MQObjective instance.
-    """
+    """Multiple Quantile Regressor using GBDT (LightGBM or XGBoost).
+    This regressor implements a multi-quantile estimation while ensuring non-crossing quantiles."""
 
     def __init__(
         self,
-        params: ParamsLike,
+        params: dict[str, Any],
         model: str = ModelName.lightgbm.value,
         objective: str = ObjectiveName.check.value,
-        delta: float = 0.01,
         epsilon: float = 1e-5,
     ) -> None:
-        """Initialize the MQRegressor."""
-        params_validate(params=params)
-        self._params = params
-        self._model = ModelName.get(model)
-        self._objective = ObjectiveName.get(objective)
-        self._delta = delta
-        self._epsilon = epsilon
+        """Initialize the MQRegressor with specified model parameters and objective."""
+        validate_params(params=params)
+        self.params = params
+        self.model_name = ModelName[model]
+        self.objective = ObjectiveName[objective]
+        self.epsilon = epsilon
 
     def fit(
         self,
@@ -60,42 +45,39 @@ class MQRegressor:
         eval_set: MQDataset | None = None,
         **kwargs,
     ) -> None:
-        """
-        Fit the regressor to the dataset.
-        Args:
-            dataset (MQDataset): The dataset to fit the model on.
-            eval_set (Optional[MQDataset]):
-                The validation dataset. If None, the dataset is used for evaluation.
-            **kwargs:
-                train parameters.
-        """
-        if eval_set:
-            _eval_set = eval_set.dtrain
-        else:
-            _eval_set = dataset.dtrain
-
+        """Fit the multi-quantile regressor to the dataset."""
         self._label_mean = dataset.label_mean
+        if eval_set:
+            eval_set.set_label_mean(self._label_mean)
+            eval_set_dtrain = eval_set.dtrain
+        else:
+            eval_set_dtrain = dataset.dtrain
 
         params = set_monotone_constraints(
-            params=self._params,
+            params=self.params,
             columns=dataset.columns,
-            model_name=self._model,
+            model_name=self.model_name,
         )
-        self._MQObj = MQObjective(
+        self.MQObj = MQObjective(
             alphas=dataset.alphas,
-            objective=self._objective,
+            objective=self.objective,
             weight=dataset.weight,
-            model=self._model,
-            delta=self._delta,
-            epsilon=self._epsilon,
+            model=self.model_name,
+            epsilon=self.epsilon,
         )
         if self.__is_lgb:
-            params.update({"objective": self._MQObj.fobj})
+            params.update({"objective": self.MQObj.fobj})
+            if not (
+                isinstance(dataset.dtrain, lgb.Dataset)
+                and isinstance(eval_set_dtrain, lgb.Dataset)
+            ):
+                raise ValueError("dtrain must be a lightgbm Dataset")
+
             self.model = lgb.train(
                 train_set=dataset.dtrain,
                 params=params,
-                feval=self._MQObj.feval,
-                valid_sets=[_eval_set],
+                feval=self.MQObj.lgb_feval,
+                valid_sets=[eval_set_dtrain],
                 **kwargs,
             )
         elif self.__is_xgb:
@@ -103,9 +85,9 @@ class MQRegressor:
                 dtrain=dataset.dtrain,
                 verbose_eval=False,
                 params=params,
-                obj=self._MQObj.fobj,
-                custom_metric=self._MQObj.feval,
-                evals=[(_eval_set, "eval")],
+                obj=self.MQObj.fobj,
+                custom_metric=self.MQObj.xgb_feval,
+                evals=[(eval_set_dtrain, "eval")],
                 **kwargs,
             )
         self._colnames = dataset.columns.to_list()
@@ -114,16 +96,12 @@ class MQRegressor:
     def predict(
         self,
         dataset: MQDataset,
-    ) -> np.ndarray:
-        """
-        Predict quantiles for the dataset.
-        Args:
-            dataset (MQDataset): The dataset to make predictions on.
-        Returns:
-            np.ndarray: The predicted quantiles.
-        """
+    ) -> npt.NDArray:
+        """Predict multiple quantiles for the given dataset."""
         self.__predict_available()
-        _pred = self.model.predict(data=dataset.dpredict) + self._label_mean
+        _pred = (
+            np.asanyarray(self.model.predict(data=dataset.dpredict)) + self._label_mean
+        )
         _pred = _pred.reshape(len(dataset.alphas), dataset.nrow)
         return _pred
 
@@ -133,28 +111,28 @@ class MQRegressor:
             raise FittingException("Fit must be executed first.")
 
     @property
-    def MQObj(self) -> MQObjective:
-        """Get the MQObjective instance."""
-        return self._MQObj
-
-    @property
-    def feature_importance(self) -> dict[str, float]:
+    def feature_importance(self) -> dict[str, Any]:
+        """Get feature importance scores from the fitted model."""
         self.__predict_available()
-        importances = {str(k): 0 for k in self._colnames}
+        importances: dict[str, Any] = {str(k): 0 for k in self._colnames}
         if self.__is_lgb:
+            if not isinstance(self.model, lgb.Booster):
+                raise TypeError("model must be a lightgbm Booster")
             _importance = self.model.feature_importance(importance_type="gain").tolist()
             importances.update({str(k): v for k, v in zip(self._colnames, _importance)})
             return importances
         else:
+            if not isinstance(self.model, xgb.Booster):
+                raise TypeError("model must be a xgboost Booster")
             importances.update(self.model.get_score(importance_type="gain"))
             return importances
 
     @property
     def __is_lgb(self) -> bool:
         """Check if the model is LightGBM."""
-        return self._model == ModelName.lightgbm
+        return self.model_name == ModelName.lightgbm
 
     @property
     def __is_xgb(self) -> bool:
         """Check if the model is XGBoost."""
-        return self._model == ModelName.xgboost
+        return self.model_name == ModelName.xgboost

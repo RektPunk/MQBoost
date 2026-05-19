@@ -1,64 +1,31 @@
 from enum import Enum
-from typing import Callable
+from typing import Any
 
 import lightgbm as lgb
-import numpy as np
-import pandas as pd
 import xgboost as xgb
 
 
-class BaseEnum(Enum):
-    @classmethod
-    def get(cls, text: str) -> "BaseEnum":
-        cls._isin(text)
-        return cls[text]
-
-    @classmethod
-    def _isin(cls, text: str) -> None:
-        if text not in cls._member_names_:
-            valid_members = ", ".join(cls._member_names_)
-            raise ValueError(
-                f"Invalid value: '{text}'. Expected one of: {valid_members}."
-            )
+class ModelName(str, Enum):
+    lightgbm = "lightgbm"
+    xgboost = "xgboost"
 
 
-# Type
-XdataLike = pd.DataFrame | pd.Series | np.ndarray
-YdataLike = pd.Series | np.ndarray
-AlphaLike = list[float] | float
-ModelLike = lgb.basic.Booster | xgb.Booster
-DtrainLike = lgb.basic.Dataset | xgb.DMatrix
-ParamsLike = dict[str, float | int | str | bool]
-WeightLike = list[float] | list[int] | np.ndarray | pd.Series
+class ObjectiveName(str, Enum):
+    check = "check"
+    huber = "huber"
+    approx = "approx"
 
 
-# Name
-class ModelName(BaseEnum):
-    lightgbm: str = "lightgbm"
-    xgboost: str = "xgboost"
+class TypeName(str, Enum):
+    train_dtype = "train_dtype"
+    predict_dtype = "predict_dtype"
+    constraints_type = "constraints_type"
 
 
-class ObjectiveName(BaseEnum):
-    check: str = "check"
-    huber: str = "huber"
-    approx: str = "approx"
-
-
-class TypeName(BaseEnum):
-    train_dtype: str = "train_dtype"
-    predict_dtype: str = "predict_dtype"
-    constraints_type: str = "constraints_type"
-
-
-# Functions
-def _lgb_predict_dtype(data: XdataLike):
-    return data
-
-
-FUNC_TYPE: dict[ModelName, dict[TypeName, Callable]] = {
+FUNC_TYPE: dict[ModelName, dict[TypeName, Any]] = {
     ModelName.lightgbm: {
         TypeName.train_dtype: lgb.Dataset,
-        TypeName.predict_dtype: _lgb_predict_dtype,
+        TypeName.predict_dtype: lambda data: data,
         TypeName.constraints_type: list,
     },
     ModelName.xgboost: {
@@ -71,8 +38,10 @@ FUNC_TYPE: dict[ModelName, dict[TypeName, Callable]] = {
 
 # Exception
 class FittingException(Exception):
+    # Raised when an operation requiring a fitted model is called on an unfitted model.
     pass
 
 
 class ValidationException(Exception):
+    # Raised when input parameters or data fail validation checks.
     pass
