@@ -27,7 +27,7 @@ Please refer to the [![Open In Colab](https://colab.research.google.com/assets/c
 # Citation
 If you use MQBoost in your research or project, please cite it as follows:
 ```bibtex
-@article{Moon2026,
+@article{moon2026monotone,
   title={Monotone Composite Quantile Regression via Second-Order Gradient Boosting Framework},
   author={Moon, Sangjun and Hong, Sungchul and Park, Beomjin},
   journal={Machine Learning},
