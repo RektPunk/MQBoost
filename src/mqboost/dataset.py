@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import lightgbm as lgb
 import numpy as np
@@ -72,11 +72,7 @@ def prepare_y(
 
 def to_dataframe(x: pd.DataFrame | pd.Series | npt.NDArray) -> pd.DataFrame:
     """Convert numpy array or pandas Series to a pandas DataFrame."""
-    if isinstance(x, np.ndarray) or isinstance(x, pd.Series):
-        _x = pd.DataFrame(x)
-    else:
-        _x = x.copy()
-    return _x
+    return pd.DataFrame(x) if isinstance(x, (np.ndarray, pd.Series)) else x.copy()
 
 
 class MQDataset:

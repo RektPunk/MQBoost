@@ -11,12 +11,9 @@ repos:
       - id: check-merge-conflict
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.20
+    rev: v0.16.8
     hooks:
       - id: ruff
         name: ruff check
         args: [--fix]
-      - id: ruff
-        name: ruff isort
-        args: [--select, I, --fix]
       - id: ruff-format

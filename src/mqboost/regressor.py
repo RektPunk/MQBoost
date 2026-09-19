@@ -119,7 +119,9 @@ class MQRegressor:
             if not isinstance(self.model, lgb.Booster):
                 raise TypeError("model must be a lightgbm Booster")
             _importance = self.model.feature_importance(importance_type="gain").tolist()
-            importances.update({str(k): v for k, v in zip(self._colnames, _importance)})
+            importances.update(
+                {str(k): v for k, v in zip(self._colnames, _importance, strict=True)}
+            )
             return importances
         else:
             if not isinstance(self.model, xgb.Booster):
