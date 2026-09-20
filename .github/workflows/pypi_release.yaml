@@ -1,4 +1,4 @@
-name: Publish Python Package
+name: Publish to PyPI
 
 on:
   push:
@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Setup python
+        uses: actions/setup-python@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7

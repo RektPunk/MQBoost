@@ -220,7 +220,7 @@ def test_mqdataset_initialization_without_label():
     with pytest.raises(
         FittingException, match="Fitting is impossible since label is None"
     ):
-        dataset.label
+        _ = dataset.label
 
 
 # Test properties
